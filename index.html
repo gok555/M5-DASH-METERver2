@@ -1,248 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>M5CAN Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M5CAN Dashboard Ver 2.0</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@400;700&display=swap');
-        :root {
-            --bg-color: #050505;
-            --panel-bg: #1a1a1a;
-            --accent-cyan: #00f3ff;
-            --accent-red: #ff3333;
-            --accent-green: #33ff33;
-            --accent-yellow: #ffcc00;
-            --text-main: #ffffff;
-            --text-dim: #888888;
-        }
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Orbitron', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        /* --- Header / Connection --- */
-        header {
-            width: 100%;
-            padding: 10px 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-sizing: border-box;
-            position: fixed;
-            top: 0;
-            z-index: 100;
+            padding: 20px;
+            text-align: center;
         }
         h1 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: var(--accent-cyan);
-            letter-spacing: 2px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #aaaaaa;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            width: 140px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        .label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #888;
+        }
+        .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .unit {
+            font-size: 12px;
+            color: #666;
+        }
+        canvas {
+            background-color: #000;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
         }
         #connectBtn {
-            background: var(--panel-bg);
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            padding: 8px 16px;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s;
-            border-radius: 4px;
-        }
-        #connectBtn:hover {
-            background: var(--accent-cyan);
-            color: #000;
-            box-shadow: 0 0 10px var(--accent-cyan);
-        }
-        #connectBtn.connected {
-            background: var(--accent-green);
-            border-color: var(--accent-green);
-            color: #000;
-        }
-        /* --- Main Dashboard --- */
-        .dashboard {
-            margin-top: 60px;
-            /* Header offset */
             width: 100%;
-            max-width: 800px;
-            padding: 10px;
-            box-sizing: border-box;
-            display: grid;
-            grid-gap: 15px;
-            /* Mobile Layout: Stacked */
-            grid-template-columns: 1fr;
+            max-width: 300px;
+            margin-bottom: 20px;
         }
-        /* --- Gauge Container --- */
-        .gauge-container {
-            position: relative;
-            background: var(--panel-bg);
-            border-radius: 10px;
-            padding: 10px;
+        #connectBtn:disabled {
+            background-color: #555;
+        }
+        .mode-buttons {
             display: flex;
             justify-content: center;
-            align-items: center;
-            border: 1px solid #333;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-            min-height: 250px;
-        }
-        .gauge-label {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-        /* Canvas for drawing gauges */
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-        }
-        /* --- Digital Readouts Grid --- */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            /* 2 cols */
             gap: 10px;
+            margin-bottom: 20px;
         }
-        .metric-card {
-            background: var(--panel-bg);
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid #333;
-            position: relative;
+        .mode-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 1px solid #444;
+            background-color: #222;
+            color: #aaa;
+            border-radius: 5px;
+            cursor: pointer;
         }
-        .metric-title {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .metric-value {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-main);
-        }
-        .metric-unit {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            margin-top: 2px;
-        }
-        /* Specific Colors */
-        .val-afr {
-            color: var(--accent-yellow);
-        }
-        .val-iat {
-            color: var(--accent-cyan);
-        }
-        .val-volt {
-            color: var(--accent-green);
-        }
-        .val-egt {
-            color: var(--accent-red);
-        }
-        /* --- Responsive Tweaks --- */
-        @media (min-width: 600px) {
-            .dashboard {
-                grid-template-columns: 1fr 1fr;
-                /* Side by side on larger screens */
-            }
-            .gauge-container {
-                grid-column: 1 / -1;
-                /* Gauge spans full width */
-            }
-            .metrics-grid {
-                grid-column: 1 / -1;
-                grid-template-columns: repeat(4, 1fr);
-                /* 4 cols */
-            }
+        .mode-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>M5CAN DASH</h1>
-        <button id="connectBtn">CONNECT</button>
-    </header>
-    <div class="dashboard">
-        <!-- Main RPM / Boost Gauge -->
-        <div class="gauge-container" id="mainGaugeContainer">
-            <span class="gauge-label">RPM / BOOST(kpa)</span>
-            <canvas id="rpmCanvas" width="500" height="300"></canvas>
+    <h1>M5CAN Dashboard</h1>
+    <button id="connectBtn">CONNECT BLE</button>
+    <div class="mode-buttons" id="modeControls" style="display:none;">
+        <button id="btnCustom" class="mode-btn active" onclick="setMode('CUSTOM')">CUSTOM ECU</button>
+        <button id="btnOEM" class="mode-btn" onclick="setMode('OEM')">OEM OBD2</button>
+    </div>
+    <!-- Gauge Canvas included -->
+    <canvas id="gaugeCanvas" width="320" height="240"></canvas>
+    <div class="container">
+        <div class="card">
+            <div class="label" style="color:#0afcf0">IAT</div>
+            <div class="value" id="val_iat" style="color:#07f5ee">---</div>
+            <div class="unit">°C</div>
         </div>
-        <!-- Secondary Metrics -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <span class="metric-title">AFR</span>
-                <span class="metric-value val-afr" id="val-afr">---</span>
-                <span class="metric-unit">Lambda/Ratio</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-title">MAP</span>
-                <span class="metric-value" id="val-map">---</span>
-                <span class="metric-unit">kPa</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-title">IAT</span>
-                <span class="metric-value val-iat" id="val-iat">---</span>
-                <span class="metric-unit">°C</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-title">VOLT</span>
-                <span class="metric-value val-volt" id="val-volt">---</span>
-                <span class="metric-unit">V</span>
-            </div>
-            <div class="metric-card">
-                <span class="metric-title">EGT</span>
-                <span class="metric-value val-egt" id="val-egt">---</span>
-                <span class="metric-unit">°C</span>
-            </div>
+        <div class="card">
+            <div class="label" style="color:#e809fc">AFR</div>
+            <div class="value" id="val_afr" style="color:#ea07f5">---</div>
+            <div class="unit">Ratio</div>
+        </div>
+        <div class="card">
+            <div class="label" style="color:#f5f1f1">RPM</div>
+            <div class="value" id="val_rpm" style="color:#f9f9f9">---</div>
+            <div class="unit">rev/min</div>
+        </div>
+        <div class="card">
+            <div class="label" style="color:#f8d306">VOLT</div>
+            <div class="value" id="val_volt" style="color:#f5c807">---</div>
+            <div class="unit">V</div>
+        </div>
+        <div class="card">
+            <div class="label" style="color:#0bf20c">MAP</div>
+            <div class="value" id="val_map" style="color:#2bf507">---</div>
+            <div class="unit">kPa</div>
+        </div>
+        <div class="card">
+            <div class="label" style="color:#fc0707">EGT</div>
+            <div class="value" id="val_egt" style="color:#f51907">---</div>
+            <div class="unit">°C</div>
         </div>
     </div>
     <script>
         // --- Configuration ---
-        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const TX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Notify (M5 -> Phone)
-        // --- State ---
+        const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to M5
+        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from M5
         let bluetoothDevice;
-        let bluetoothCharacteristic;
-        let data = {
+        let rxCharacteristic;
+        let txCharacteristic;
+        const connectBtn = document.getElementById('connectBtn');
+        const modeControls = document.getElementById('modeControls');
+        const btnCustom = document.getElementById('btnCustom');
+        const btnOEM = document.getElementById('btnOEM');
+        // Data Store
+        let displayData = {
             rpm: 0, map: 0, afr: 0, iat: 0, volt: 0, egt: 0
         };
-        // Display values for smoothing
-        let displayData = {
+        // Target values for smoothing
+        let targetData = {
             rpm: 0, map: 0
         };
-        // --- UI Elements ---
-        const connectBtn = document.getElementById('connectBtn');
-        const elMap = document.getElementById('val-map');
-        const elAfr = document.getElementById('val-afr');
-        const elIat = document.getElementById('val-iat');
-        const elVolt = document.getElementById('val-volt');
-        const elEgt = document.getElementById('val-egt');
-        // --- Bluetooth Logic ---
-        connectBtn.addEventListener('click', async () => {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                disconnect();
-            } else {
-                connect();
-            }
-        });
         async function connect() {
             try {
                 console.log('Requesting Bluetooth Device...');
@@ -251,122 +159,153 @@
                     optionalServices: [SERVICE_UUID]
                 });
                 bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                console.log('Connecting to GATT Server...');
                 const server = await bluetoothDevice.gatt.connect();
+                console.log('Getting Service...');
                 const service = await server.getPrimaryService(SERVICE_UUID);
-                bluetoothCharacteristic = await service.getCharacteristic(TX_CHAR_UUID);
-                await bluetoothCharacteristic.startNotifications();
-                bluetoothCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                console.log('Getting Characteristics...');
+                txCharacteristic = await service.getCharacteristic(TX_UUID);
+                rxCharacteristic = await service.getCharacteristic(RX_UUID);
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
                 console.log('Connected!');
                 connectBtn.textContent = 'DISCONNECT';
-                connectBtn.classList.add('connected');
+                modeControls.style.display = 'flex';
+                // Start Animation Loop
+                requestAnimationFrame(animate);
             } catch (error) {
-                console.log('Argh! ' + error);
+                console.log('Connection Failed:', error);
+                alert('Connection Failed: ' + error);
             }
         }
         function disconnect() {
-            if (bluetoothDevice) {
-                if (bluetoothDevice.gatt.connected) {
-                    bluetoothDevice.gatt.disconnect();
-                }
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
             }
         }
-        function onDisconnected(event) {
-            console.log('> Bluetooth Device disconnected');
-            connectBtn.textContent = 'CONNECT';
-            connectBtn.classList.remove('connected');
+        function onDisconnected() {
+            console.log('Disconnected');
+            connectBtn.textContent = 'CONNECT BLE';
+            modeControls.style.display = 'none';
         }
         function handleNotifications(event) {
             let value = event.target.value;
             let decoder = new TextDecoder('utf-8');
             let str = decoder.decode(value).trim();
+            // Expected: "RPM,MAP,AFR,IAT,VOLT,EGT"
+            // Example: "3000,50,14.7,30,13.5,800"
             let parts = str.split(',');
             if (parts.length >= 6) {
-                data.rpm = parseInt(parts[0]);
-                data.map = parseInt(parts[1]);
-                data.afr = parseFloat(parts[2]);
-                data.iat = parseInt(parts[3]);
-                data.volt = parseFloat(parts[4]);
-                data.egt = parseInt(parts[5]);
-                // Update Text Immediately (No smoothing needed for digits usually, or maybe slight delay)
-                updateUIText();
+                // Update Targets for smoothing
+                targetData.rpm = parseInt(parts[0]);
+                targetData.map = parseInt(parts[1]); // Already subtract 100 in Py? Yes.
+                // Direct update for texts
+                document.getElementById('val_rpm').textContent = parts[0];
+                document.getElementById('val_map').textContent = parts[1];
+                document.getElementById('val_afr').textContent = parts[2];
+                document.getElementById('val_iat').textContent = parts[3];
+                document.getElementById('val_volt').textContent = parts[4];
+                document.getElementById('val_egt').textContent = parts[5];
             }
         }
-        function updateUIText() {
-            // map is smoothened in gauge, but text can be raw or smoothed. Let's use raw for text responsiveness.
-            elMap.innerText = data.map;
-            elAfr.innerText = data.afr.toFixed(1);
-            elIat.innerText = data.iat;
-            elVolt.innerText = data.volt.toFixed(1);
-            elEgt.innerText = data.egt;
+        // --- Mode Switching ---
+        async function setMode(mode) {
+            if (!rxCharacteristic) return;
+            let cmd = "";
+            if (mode === 'CUSTOM') {
+                cmd = "SET_MODE_CUSTOM";
+                btnCustom.classList.add('active');
+                btnOEM.classList.remove('active');
+            } else {
+                cmd = "SET_MODE_OEM";
+                btnOEM.classList.add('active');
+                btnCustom.classList.remove('active');
+            }
+            try {
+                let encoder = new TextEncoder();
+                await rxCharacteristic.writeValue(encoder.encode(cmd));
+                console.log("Sent Mode:", cmd);
+            } catch (e) {
+                console.log("Send Error:", e);
+            }
         }
-        // --- Gauge Drawing Logic (Canvas) ---
-        const canvas = document.getElementById('rpmCanvas');
+        // --- Canvas Animation (LERP) ---
+        const canvas = document.getElementById('gaugeCanvas');
         const ctx = canvas.getContext('2d');
-        // RPM Gauge Config
-        const RPM_MAX = 8000;
-        const START_ANGLE = Math.PI * 0.8;
-        const END_ANGLE = Math.PI * 2.2;
-        // Linear Interpolation
         function lerp(start, end, amt) {
             return (1 - amt) * start + amt * end;
         }
-        // Animation Loop
-        function draw() {
-            requestAnimationFrame(draw);
+        function drawGauge(rpm, map) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Smoothing
-            // 0.1 = slower smooth, 0.3 = faster response
-            displayData.rpm = lerp(displayData.rpm, data.rpm, 0.15);
-            displayData.map = lerp(displayData.map, data.map, 0.15);
-            const cx = canvas.width / 2;
-            const cy = canvas.height * 0.7;
-            const radius = Math.min(cx, cy) - 20;
-            // --- 1. RPM Arc Background ---
+            // Background
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // RPM BAR (Arc)
+            let cx = canvas.width / 2;
+            let cy = canvas.height / 2 + 40;
+            let radius = 100;
+            let startAngle = Math.PI * 0.8;
+            let endAngle = Math.PI * 2.2;
+            let maxRpm = 8000;
+            // Draw Track
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, START_ANGLE, END_ANGLE);
-            ctx.lineWidth = 20;
-            ctx.strokeStyle = '#333';
+            ctx.arc(cx, cy, radius, startAngle, endAngle);
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = "#333";
             ctx.stroke();
-            // --- 2. RPM Value Arc ---
-            const rpmRatio = Math.min(Math.max(displayData.rpm, 0) / RPM_MAX, 1.0);
-            const currentAngle = START_ANGLE + (END_ANGLE - START_ANGLE) * rpmRatio;
-            let grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-            grad.addColorStop(0, '#00f3ff');
-            grad.addColorStop(0.7, '#33ff33');
-            grad.addColorStop(1, '#ff3333');
+            // Draw Value
+            let progress = rpm / maxRpm;
+            if (progress > 1) progress = 1;
+            let currentAngle = startAngle + (endAngle - startAngle) * progress;
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, START_ANGLE, currentAngle);
-            ctx.lineWidth = 20;
+            ctx.arc(cx, cy, radius, startAngle, currentAngle);
+            ctx.lineWidth = 15;
+            // Gradient Color
+            let grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            grad.addColorStop(0, "#0afcf0");
+            grad.addColorStop(0.5, "#0bf20c");
+            grad.addColorStop(1, "#fc0707");
             ctx.strokeStyle = grad;
             ctx.stroke();
-            // --- 3. Digital RPM Readout ---
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 60px Orbitron';
-            ctx.textAlign = 'center';
-            // Show smoothed value or raw? Smoothed looks better matching the bar.
-            ctx.fillText(Math.round(displayData.rpm), cx, cy);
-            ctx.font = '20px Orbitron';
-            ctx.fillStyle = '#888';
-            ctx.fillText("RPM", cx, cy + 30);
-            // --- 4. Boost Bar (Bottom) ---
-            // Range: 0kpa to 250kpa
-            const barWidth = 300;
-            const barHeight = 15;
-            const barX = cx - barWidth / 2;
-            const barY = cy + 60;
-            // Background
-            ctx.fillStyle = '#333';
-            ctx.fillRect(barX, barY, barWidth, barHeight);
-            // Value (Smoothed)
-            const mapRatio = Math.min(Math.max(displayData.map, 0) / 250, 1.0);
-            ctx.fillStyle = displayData.map > 100 ? '#ffcc00' : '#00f3ff';
-            ctx.fillRect(barX, barY, barWidth * mapRatio, barHeight);
-            ctx.font = '14px Roboto Mono';
-            ctx.fillStyle = '#aaa';
-            ctx.fillText("BOOST/MAP", cx, barY + 30);
+            // Center Text
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 40px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(Math.round(rpm), cx, cy);
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "#888";
+            ctx.fillText("RPM", cx, cy + 20);
+            // Boost Bar (Bottom)
+            let barW = 200;
+            let barH = 10;
+            let barX = (canvas.width - barW) / 2;
+            let barY = cy + 50;
+            ctx.fillStyle = "#333";
+            ctx.fillRect(barX, barY, barW, barH);
+            let mapProgress = (map + 100) / 250; // Range -100 to +150 kpa (relative) -> 0 to 250 abs? 
+            // map val comes as Relative Kpa (e.g. -50 vacuum, +100 boost)
+            // Let's assume -100 to +150 range for bar
+            let boost = map; // -100 to ...
+            let bPct = (boost + 80) / 200; // Adjust for visualization
+            if (bPct < 0) bPct = 0;
+            if (bPct > 1) bPct = 1;
+            ctx.fillStyle = "#0bf20c";
+            ctx.fillRect(barX, barY, barW * bPct, barH);
         }
-        // Start drawing
-        draw();
+        function animate() {
+            // Smooth values
+            displayData.rpm = lerp(displayData.rpm, targetData.rpm, 0.2);
+            displayData.map = lerp(displayData.map, targetData.map, 0.2);
+            drawGauge(displayData.rpm, displayData.map);
+            requestAnimationFrame(animate);
+        }
+        connectBtn.addEventListener('click', async () => {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                disconnect();
+            } else {
+                connect();
+            }
+        });
     </script>
 </body>
 </html>
