@@ -1232,20 +1232,11 @@
                 document.getElementById("view-settings").classList.remove("active");
                 document.getElementById("view-meter").classList.remove("active");
                 document.getElementById("view-main").classList.add("active");
-                // Ensure Monitor is valid
-                const monitor = document.getElementById("rx-monitor-display");
-                if (monitor) monitor.style.display = "none";
             }
             function showMeter() {
                 document.getElementById("view-main").classList.remove("active");
                 document.getElementById("view-settings").classList.remove("active");
                 document.getElementById("view-meter").classList.add("active");
-                // Show Monitor if data exists (check content)
-                const valEl = document.getElementById("rx-monitor-val");
-                const monitor = document.getElementById("rx-monitor-display");
-                if (valEl && valEl.textContent !== "---" && monitor) {
-                    monitor.style.display = "block";
-                }
             }
             function log(t) {
                 const el = document.getElementById("log");
@@ -1398,34 +1389,35 @@
                 }
                 else if (cleanedCmd.startsWith("VAL=")) {
                     const val = cleanedCmd.split("=")[1];
-                    const el = document.getElementById("rx-monitor-val");
+                    // Update Grid Cell 2 (Generic Monitor)
+                    const el = document.getElementById("meter-val-2");
                     if (el) {
                         el.textContent = val;
+                        // Flash effect
+                        el.style.color = "#FFF";
+                        setTimeout(() => el.style.color = "#FFD700", 100);
                     }
-                    const container = document.getElementById("rx-monitor-display");
-                    if (container) container.style.display = "block";
                 }
                 else if (cleanedCmd.startsWith("TEMP=")) {
                     const val = cleanedCmd.split("=")[1];
-                    // Meter View Update
-                    const tempEl = document.getElementById("meter-temp-display");
-                    if (tempEl) {
-                        // Display as-is (integer)
-                        tempEl.textContent = val + "°C";
-                        // ★ NEW: Temp Alarm Check
-                        const tempVal = parseInt(val);
-                        if (!isNaN(tempVal)) {
-                            if (tempVal >= tempWarnVal) {
-                                tempEl.classList.add("temp-warning"); // RED blink
-                                // Voice Warning (Check interval 15sec)
-                                const now = Date.now();
-                                if (now - lastTempWarnTime > 15000) {
-                                    speakVoice(`排気温度警告。${tempVal}度です。`);
-                                    lastTempWarnTime = now;
-                                }
-                            } else {
-                                tempEl.classList.remove("temp-warning");
+                    // Update Grid Cell 1 (Exhaust Temp)
+                    const el = document.getElementById("meter-val-1");
+                    if (el) {
+                        el.textContent = val;
+                        // Temp Warning Logic
+                        let tempVal = parseInt(val);
+                        if (!isNaN(tempVal) && tempVal >= tempWarnVal) {
+                            el.classList.add("temp-warning");
+                            el.classList.remove("val-cyan");
+                            el.classList.add("val-red");
+                            if (Date.now() - lastTempWarnTime > 5000) {
+                                playVoice("warning-temp");
+                                lastTempWarnTime = Date.now();
                             }
+                        } else {
+                            el.classList.remove("temp-warning");
+                            el.classList.remove("val-red");
+                            el.classList.add("val-cyan");
                         }
                     }
                 }
