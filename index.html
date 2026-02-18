@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M5CAN Dashboard Ver 2.0</title>
+    <title>M5CAN Dashboard Ver 2.1 (Fixed)</title>
     <style>
         body {
             background-color: #121212;
@@ -91,7 +91,7 @@
     </style>
 </head>
 <body>
-    <h1>M5CAN Dashboard</h1>
+    <h1>M5CAN Dashboard Ver 2.1 (Fixed)</h1>
     <button id="connectBtn">CONNECT BLE</button>
     <div class="mode-buttons" id="modeControls" style="display:none;">
         <button id="btnCustom" class="mode-btn active" onclick="setMode('CUSTOM')">CUSTOM ECU</button>
@@ -134,8 +134,8 @@
     <script>
         // --- Configuration ---
         const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write to M5
-        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify from M5
+        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; 
+        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; 
         let bluetoothDevice;
         let rxCharacteristic;
         let txCharacteristic;
@@ -155,7 +155,8 @@
             try {
                 console.log('Requesting Bluetooth Device...');
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'M5CAN' }],
+                    // FIX: Changed from 'M5CAN' to 'M5' to match firmware
+                    filters: [{ namePrefix: 'M5' }],
                     optionalServices: [SERVICE_UUID]
                 });
                 bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
@@ -193,13 +194,10 @@
             let decoder = new TextDecoder('utf-8');
             let str = decoder.decode(value).trim();
             // Expected: "RPM,MAP,AFR,IAT,VOLT,EGT"
-            // Example: "3000,50,14.7,30,13.5,800"
             let parts = str.split(',');
             if (parts.length >= 6) {
-                // Update Targets for smoothing
                 targetData.rpm = parseInt(parts[0]);
-                targetData.map = parseInt(parts[1]); // Already subtract 100 in Py? Yes.
-                // Direct update for texts
+                targetData.map = parseInt(parts[1]); 
                 document.getElementById('val_rpm').textContent = parts[0];
                 document.getElementById('val_map').textContent = parts[1];
                 document.getElementById('val_afr').textContent = parts[2];
@@ -282,11 +280,8 @@
             let barY = cy + 50;
             ctx.fillStyle = "#333";
             ctx.fillRect(barX, barY, barW, barH);
-            let mapProgress = (map + 100) / 250; // Range -100 to +150 kpa (relative) -> 0 to 250 abs? 
-            // map val comes as Relative Kpa (e.g. -50 vacuum, +100 boost)
-            // Let's assume -100 to +150 range for bar
-            let boost = map; // -100 to ...
-            let bPct = (boost + 80) / 200; // Adjust for visualization
+            let boost = map; 
+            let bPct = (boost + 80) / 200; 
             if (bPct < 0) bPct = 0;
             if (bPct > 1) bPct = 1;
             ctx.fillStyle = "#0bf20c";
