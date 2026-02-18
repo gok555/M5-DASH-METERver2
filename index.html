@@ -596,11 +596,13 @@
             </div>
             <button class="action-btn" onclick="setRxConfig()">SET</button>
         </div>
-        <!-- Monitor Value Display -->
-        <div style="margin-top:10px; background:#222; padding:10px; border-radius:8px; text-align:center;">
+        <!-- Monitor Value Display (Moved to Meter View) -->
+        <!-- 
+         <div style="margin-top:10px; background:#222; padding:10px; border-radius:8px; text-align:center;">
             <span style="color:#aaa; font-size:0.8rem;">Monitor Value</span>
-            <div id="rx-monitor-val" style="font-size:1.5rem; color:#FFD700; font-family:monospace;">---</div>
-        </div>
+            <div id="rx-monitor-val-OLD" style="font-size:1.5rem; color:#FFD700; font-family:monospace;">---</div>
+         </div>
+         -->
     </div>
     <div class="control-group">
         <h3>Manage Config</h3>
@@ -1297,7 +1299,11 @@
                 else if (cleanedCmd.startsWith("VAL=")) {
                     const val = cleanedCmd.split("=")[1];
                     const el = document.getElementById("rx-monitor-val");
-                    if (el) el.textContent = val;
+                    if (el) {
+                        el.textContent = val;
+                    }
+                    const container = document.getElementById("rx-monitor-display");
+                    if (container) container.style.display = "block";
                 }
                 else if (cleanedCmd.startsWith("TEMP=")) {
                     const val = cleanedCmd.split("=")[1];
