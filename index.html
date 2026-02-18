@@ -406,16 +406,87 @@
         /* --- Meter View --- */
         #view-meter {
             background: #000;
+            display: flex;
+            /* Changed from default block/flex centering to handle grid */
+            flex-direction: column;
+            padding-top: 50px;
+            /* Space for back button */
+            box-sizing: border-box;
+        }
+        #meter-grid {
+            display: grid;
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            /* Default Portrait: 2 columns, 4 rows */
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+        }
+        /* Landscape Mode */
+        @media (orientation: landscape) {
+            #meter-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+            }
+        }
+        .meter-cell {
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
         }
-        #meter-temp-display {
-            font-size: clamp(4rem, 15vw, 10rem);
+        .meter-label {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
             font-weight: bold;
+        }
+        .meter-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+        }
+        .meter-unit {
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            color: #666;
+            font-size: 0.7rem;
+        }
+        /* Specific Colors */
+        .val-green {
+            color: #00FF00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+        }
+        .val-red {
+            color: #FF0000;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+        }
+        .val-yellow {
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+        .val-cyan {
             color: #00FFFF;
-            font-family: monospace;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+        }
+        .val-gray {
+            color: #444;
         }
         .meter-header-btn {
             position: absolute;
@@ -425,7 +496,7 @@
             background: #333;
             border: 1px solid #555;
             border-radius: 8px;
-            padding: 10px 15px;
+            padding: 5px 15px;
             color: white;
             cursor: pointer;
             z-index: 20;
@@ -435,14 +506,37 @@
 <body>
     <div id="view-meter" class="view-container">
         <button class="meter-header-btn" onclick="showMain()">↩️ Back</button>
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <div style="color:#666; font-size:1.5rem; margin-bottom:10px;">EXHAUST TEMP</div>
-            <div style="color:#666; font-size:1.5rem; margin-bottom:10px;">EXHAUST TEMP</div>
-            <div id="meter-temp-display">--°C</div>
-            <!-- Generic Monitor Value (Added Here) -->
-            <div id="rx-monitor-display"
-                style="margin-top:20px; font-size:1.5rem; color:#FFD700; font-family:monospace; display:none; text-align:center;">
-                RX M: <span id="rx-monitor-val">---</span>
+        <div id="meter-grid">
+            <!-- Cell 1: Exhaust Temp -->
+            <div class="meter-cell">
+                <div class="meter-label">Exhaust Temp</div>
+                <div id="meter-val-1" class="meter-value val-cyan">--</div>
+                <div class="meter-unit">°C</div>
+            </div>
+            <!-- Cell 2: Generic Monitor -->
+            <div class="meter-cell">
+                <div class="meter-label">RX Monitor</div>
+                <div id="meter-val-2" class="meter-value val-yellow">---</div>
+                <div class="meter-unit">RAW</div>
+            </div>
+            <!-- Empty Cells 3-8 -->
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-value val-gray">--</div>
             </div>
         </div>
     </div>
