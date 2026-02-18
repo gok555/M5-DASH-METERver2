@@ -2,180 +2,263 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M5CAN Dashboard Ver 2.1 (Fixed)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>M5CAN Dashboard Ver 3.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #00f3ff;
+            --secondary: #ff00ff;
+            --success: #00ff00;
+            --danger: #ff0000;
+            --bg: #050505;
+            --panel: #111;
+            --text-dim: #555;
+            --text-bright: #fff;
+        }
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'DejaVu Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-bright);
+            font-family: 'Orbitron', sans-serif;
             margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #aaaaaa;
-        }
-        .container {
+            padding: 10px;
+            overflow: hidden;
+            height: 100vh;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            max-width: 600px;
-            margin: 0 auto;
+            flex-direction: column;
+            box-sizing: border-box;
         }
-        .card {
-            background-color: #1e1e1e;
-            border-radius: 10px;
-            padding: 15px;
-            width: 140px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            text-align: center;
+        /* Top Bar */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            height: 40px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 10px;
         }
-        .label {
-            font-size: 14px;
-            margin-bottom: 5px;
-            color: #888;
-        }
-        .value {
-            font-size: 28px;
-            font-weight: bold;
-        }
-        .unit {
+        .status-badge {
             font-size: 12px;
-            color: #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #222;
+            color: #777;
         }
-        canvas {
-            background-color: #000;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        .status-badge.connected {
+            background: rgba(0, 243, 255, 0.2);
+            color: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
         }
         #connectBtn {
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 5px 15px;
+            font-family: inherit;
             cursor: pointer;
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 20px;
+            transition: all 0.3s;
         }
-        #connectBtn:disabled {
-            background-color: #555;
+        #connectBtn:hover {
+            background: #333;
+            border-color: var(--primary);
         }
-        .mode-buttons {
+        /* Main Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+            flex: 1;
+            height: calc(100% - 60px);
+        }
+        .widget {
+            background: var(--panel);
+            border: 1px solid #333;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, transparent, rgba(0, 243, 255, 0.1), transparent);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .widget-label {
+            font-size: 14px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: absolute;
+            top: 10px;
+            left: 15px;
+        }
+        .widget-value {
+            font-size: 32px;
+            font-weight: 700;
+            z-index: 1;
+        }
+        .widget-unit {
+            font-size: 14px;
+            color: var(--text-dim);
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+        }
+        /* Center Gauge */
+        .center-panel {
+            grid-column: 2;
+            grid-row: 1 / 3;
             display: flex;
             justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        #gaugeCanvas {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 500px;
+        }
+        /* Color Modifiers */
+        .text-primary {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
+        }
+        .text-secondary {
+            color: var(--secondary);
+            text-shadow: 0 0 10px var(--secondary);
+        }
+        .text-success {
+            color: var(--success);
+            text-shadow: 0 0 10px var(--success);
+        }
+        .text-warn {
+            color: #ffaa00;
+            text-shadow: 0 0 10px #ffaa00;
+        }
+        .text-danger {
+            color: var(--danger);
+            text-shadow: 0 0 10px var(--danger);
+        }
+        /* Mode buttons - Hidden overlay style */
+        .mode-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .center-panel:hover .mode-overlay {
+            opacity: 1;
         }
         .mode-btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: 1px solid #444;
-            background-color: #222;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #555;
             color: #aaa;
-            border-radius: 5px;
+            padding: 5px 10px;
             cursor: pointer;
+            font-size: 12px;
         }
         .mode-btn.active {
-            background-color: #007bff;
-            color: white;
-            border-color: #007bff;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            .center-panel {
+                grid-column: 1 / 3;
+                grid-row: 1;
+                height: 300px;
+            }
+            .widget-value {
+                font-size: 24px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>M5CAN Dashboard Ver 2.1 (Fixed)</h1>
-    <button id="connectBtn">CONNECT BLE</button>
-    <div class="mode-buttons" id="modeControls" style="display:none;">
-        <button id="btnCustom" class="mode-btn active" onclick="setMode('CUSTOM')">CUSTOM ECU</button>
-        <button id="btnOEM" class="mode-btn" onclick="setMode('OEM')">OEM OBD2</button>
+    <div class="header">
+        <div class="status-badge" id="bleStatus">DISCONNECTED</div>
+        <div style="font-size:14px; color:#555;">M5 DASHBOARD V3.0</div>
+        <button id="connectBtn">CONNECT</button>
     </div>
-    <!-- Gauge Canvas included -->
-    <canvas id="gaugeCanvas" width="320" height="240"></canvas>
-    <div class="container">
-        <div class="card">
-            <div class="label" style="color:#0afcf0">IAT</div>
-            <div class="value" id="val_iat" style="color:#07f5ee">---</div>
-            <div class="unit">°C</div>
+    <div class="dashboard-grid">
+        <!-- Left Side -->
+        <div class="widget">
+            <div class="widget-label">IAT</div>
+            <div class="widget-value text-primary" id="val_iat">---</div>
+            <div class="widget-unit">°C</div>
         </div>
-        <div class="card">
-            <div class="label" style="color:#e809fc">AFR</div>
-            <div class="value" id="val_afr" style="color:#ea07f5">---</div>
-            <div class="unit">Ratio</div>
+        <div class="widget">
+            <div class="widget-label">VOLT</div>
+            <div class="widget-value text-warn" id="val_volt">---</div>
+            <div class="widget-unit">V</div>
         </div>
-        <div class="card">
-            <div class="label" style="color:#f5f1f1">RPM</div>
-            <div class="value" id="val_rpm" style="color:#f9f9f9">---</div>
-            <div class="unit">rev/min</div>
+        <!-- Center -->
+        <div class="center-panel">
+            <canvas id="gaugeCanvas" width="500" height="500"></canvas>
+            <div class="mode-overlay" id="modeControls">
+                <button class="mode-btn active" id="btnCustom" onclick="setMode('CUSTOM')">CUSTOM</button>
+                <button class="mode-btn" id="btnOEM" onclick="setMode('OEM')">OEM</button>
+            </div>
         </div>
-        <div class="card">
-            <div class="label" style="color:#f8d306">VOLT</div>
-            <div class="value" id="val_volt" style="color:#f5c807">---</div>
-            <div class="unit">V</div>
+        <!-- Right Side -->
+        <div class="widget">
+            <div class="widget-label">AFR</div>
+            <div class="widget-value text-secondary" id="val_afr">---</div>
+            <div class="widget-unit">AFR</div>
         </div>
-        <div class="card">
-            <div class="label" style="color:#0bf20c">MAP</div>
-            <div class="value" id="val_map" style="color:#2bf507">---</div>
-            <div class="unit">kPa</div>
-        </div>
-        <div class="card">
-            <div class="label" style="color:#fc0707">EGT</div>
-            <div class="value" id="val_egt" style="color:#f51907">---</div>
-            <div class="unit">°C</div>
+        <div class="widget">
+            <div class="widget-label">MAP</div>
+            <div class="widget-value text-success" id="val_map">---</div>
+            <div class="widget-unit">kPa</div>
         </div>
     </div>
     <script>
-        // --- Configuration ---
+        // --- Logic (Preserved from Ver 2.1) ---
         const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; 
-        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; 
+        const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
         let bluetoothDevice;
         let rxCharacteristic;
         let txCharacteristic;
         const connectBtn = document.getElementById('connectBtn');
-        const modeControls = document.getElementById('modeControls');
-        const btnCustom = document.getElementById('btnCustom');
-        const btnOEM = document.getElementById('btnOEM');
-        // Data Store
-        let displayData = {
-            rpm: 0, map: 0, afr: 0, iat: 0, volt: 0, egt: 0
-        };
-        // Target values for smoothing
-        let targetData = {
-            rpm: 0, map: 0
-        };
+        const bleStatus = document.getElementById('bleStatus');
+        let displayData = { rpm: 0, map: 0, afr: 0, iat: 0, volt: 0, egt: 0 };
+        let targetData = { rpm: 0, map: 0 }; // For smoothing
         async function connect() {
             try {
-                console.log('Requesting Bluetooth Device...');
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    // FIX: Changed from 'M5CAN' to 'M5' to match firmware
                     filters: [{ namePrefix: 'M5' }],
                     optionalServices: [SERVICE_UUID]
                 });
                 bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
-                console.log('Connecting to GATT Server...');
                 const server = await bluetoothDevice.gatt.connect();
-                console.log('Getting Service...');
                 const service = await server.getPrimaryService(SERVICE_UUID);
-                console.log('Getting Characteristics...');
                 txCharacteristic = await service.getCharacteristic(TX_UUID);
                 rxCharacteristic = await service.getCharacteristic(RX_UUID);
                 await txCharacteristic.startNotifications();
                 txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-                console.log('Connected!');
-                connectBtn.textContent = 'DISCONNECT';
-                modeControls.style.display = 'flex';
-                // Start Animation Loop
-                requestAnimationFrame(animate);
+                onConnected();
             } catch (error) {
-                console.log('Connection Failed:', error);
                 alert('Connection Failed: ' + error);
             }
         }
@@ -184,123 +267,115 @@
                 bluetoothDevice.gatt.disconnect();
             }
         }
+        function onConnected() {
+            connectBtn.textContent = 'DISCONNECT';
+            bleStatus.textContent = 'CONNECTED';
+            bleStatus.classList.add('connected');
+            requestAnimationFrame(animate);
+        }
         function onDisconnected() {
-            console.log('Disconnected');
-            connectBtn.textContent = 'CONNECT BLE';
-            modeControls.style.display = 'none';
+            connectBtn.textContent = 'CONNECT';
+            bleStatus.textContent = 'DISCONNECTED';
+            bleStatus.classList.remove('connected');
         }
         function handleNotifications(event) {
             let value = event.target.value;
             let decoder = new TextDecoder('utf-8');
             let str = decoder.decode(value).trim();
-            // Expected: "RPM,MAP,AFR,IAT,VOLT,EGT"
             let parts = str.split(',');
             if (parts.length >= 6) {
+                // Update Target Data
                 targetData.rpm = parseInt(parts[0]);
-                targetData.map = parseInt(parts[1]); 
-                document.getElementById('val_rpm').textContent = parts[0];
-                document.getElementById('val_map').textContent = parts[1];
+                targetData.map = parseInt(parts[1]);
+                // Update DOM directly for non-smoothed
                 document.getElementById('val_afr').textContent = parts[2];
                 document.getElementById('val_iat').textContent = parts[3];
                 document.getElementById('val_volt').textContent = parts[4];
-                document.getElementById('val_egt').textContent = parts[5];
+                // EGT unused in UI currently, or replace Logic? 
+                // Grid has 4 slots. IAT, VOLT, AFR, MAP. EGT hidden.
             }
         }
         // --- Mode Switching ---
         async function setMode(mode) {
             if (!rxCharacteristic) return;
-            let cmd = "";
-            if (mode === 'CUSTOM') {
-                cmd = "SET_MODE_CUSTOM";
-                btnCustom.classList.add('active');
-                btnOEM.classList.remove('active');
-            } else {
-                cmd = "SET_MODE_OEM";
-                btnOEM.classList.add('active');
-                btnCustom.classList.remove('active');
-            }
+            let cmd = (mode === 'CUSTOM') ? "SET_MODE_CUSTOM" : "SET_MODE_OEM";
             try {
                 let encoder = new TextEncoder();
                 await rxCharacteristic.writeValue(encoder.encode(cmd));
-                console.log("Sent Mode:", cmd);
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById(mode === 'CUSTOM' ? 'btnCustom' : 'btnOEM').classList.add('active');
             } catch (e) {
                 console.log("Send Error:", e);
             }
         }
-        // --- Canvas Animation (LERP) ---
+        // --- Canvas Drawing ---
         const canvas = document.getElementById('gaugeCanvas');
         const ctx = canvas.getContext('2d');
         function lerp(start, end, amt) {
             return (1 - amt) * start + amt * end;
         }
-        function drawGauge(rpm, map) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Background
-            ctx.fillStyle = "#111";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // RPM BAR (Arc)
-            let cx = canvas.width / 2;
-            let cy = canvas.height / 2 + 40;
-            let radius = 100;
-            let startAngle = Math.PI * 0.8;
-            let endAngle = Math.PI * 2.2;
-            let maxRpm = 8000;
-            // Draw Track
+        function drawGauge(rpm) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const r = Math.min(w, h) * 0.4;
+            ctx.clearRect(0, 0, w, h);
+            // Ring Background
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, startAngle, endAngle);
-            ctx.lineWidth = 15;
-            ctx.strokeStyle = "#333";
+            ctx.arc(cx, cy, r, Math.PI * 0.75, Math.PI * 2.25);
+            ctx.strokeStyle = "#222";
+            ctx.lineWidth = 20;
             ctx.stroke();
-            // Draw Value
-            let progress = rpm / maxRpm;
-            if (progress > 1) progress = 1;
-            let currentAngle = startAngle + (endAngle - startAngle) * progress;
+            // RPM Arc
+            const maxRpm = 8000;
+            const pct = Math.min(rpm / maxRpm, 1);
+            const startAngle = Math.PI * 0.75;
+            const endAngle = startAngle + (Math.PI * 1.5 * pct);
+            // Gradient
+            let grad = ctx.createLinearGradient(0, h, w, 0);
+            grad.addColorStop(0, "#00f3ff"); // Cyan
+            grad.addColorStop(0.6, "#00ff00"); // Green
+            grad.addColorStop(1, "#ff0000"); // Red
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, startAngle, currentAngle);
-            ctx.lineWidth = 15;
-            // Gradient Color
-            let grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
-            grad.addColorStop(0, "#0afcf0");
-            grad.addColorStop(0.5, "#0bf20c");
-            grad.addColorStop(1, "#fc0707");
+            ctx.arc(cx, cy, r, startAngle, endAngle);
             ctx.strokeStyle = grad;
+            ctx.lineWidth = 20;
+            ctx.lineCap = "round";
             ctx.stroke();
-            // Center Text
+            // Glow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "#00f3ff";
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            // Center Text (RPM)
             ctx.fillStyle = "#fff";
-            ctx.font = "bold 40px Arial";
+            ctx.font = "bold 80px Orbitron";
             ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
             ctx.fillText(Math.round(rpm), cx, cy);
-            ctx.font = "14px Arial";
-            ctx.fillStyle = "#888";
-            ctx.fillText("RPM", cx, cy + 20);
-            // Boost Bar (Bottom)
-            let barW = 200;
-            let barH = 10;
-            let barX = (canvas.width - barW) / 2;
-            let barY = cy + 50;
-            ctx.fillStyle = "#333";
-            ctx.fillRect(barX, barY, barW, barH);
-            let boost = map; 
-            let bPct = (boost + 80) / 200; 
-            if (bPct < 0) bPct = 0;
-            if (bPct > 1) bPct = 1;
-            ctx.fillStyle = "#0bf20c";
-            ctx.fillRect(barX, barY, barW * bPct, barH);
+            ctx.fillStyle = "#555";
+            ctx.font = "20px Orbitron";
+            ctx.fillText("RPM", cx, cy + 50);
+            // Digital Speed (Simulated if using RPM/Ratio, but let's just stick to RPM for now)
+            // Or display MAP in center bottom?
+            ctx.fillStyle = "#00ff00";
+            ctx.font = "30px Orbitron";
+            ctx.fillText(displayData.map + " kPa", cx, cy + 90);
         }
         function animate() {
-            // Smooth values
-            displayData.rpm = lerp(displayData.rpm, targetData.rpm, 0.2);
-            displayData.map = lerp(displayData.map, targetData.map, 0.2);
-            drawGauge(displayData.rpm, displayData.map);
+            displayData.rpm = lerp(displayData.rpm, targetData.rpm, 0.1);
+            displayData.map = lerp(displayData.map, targetData.map, 0.1);
+            drawGauge(displayData.rpm);
+            document.getElementById('val_map').textContent = Math.round(displayData.map);
             requestAnimationFrame(animate);
         }
-        connectBtn.addEventListener('click', async () => {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                disconnect();
-            } else {
-                connect();
-            }
+        connectBtn.addEventListener('click', () => {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) disconnect();
+            else connect();
         });
+        // Initial Draw
+        drawGauge(0);
     </script>
 </body>
 </html>
