@@ -1229,14 +1229,37 @@
                 document.getElementById("view-settings").classList.add("active");
             }
             function showMain() {
+                // Force Hide Others
+                document.getElementById("view-settings").style.display = "none";
+                document.getElementById("view-meter").style.display = "none";
                 document.getElementById("view-settings").classList.remove("active");
                 document.getElementById("view-meter").classList.remove("active");
-                document.getElementById("view-main").classList.add("active");
+                // Show Main
+                const v = document.getElementById("view-main");
+                v.style.display = "flex";
+                v.classList.add("active");
             }
             function showMeter() {
+                // Force Hide Others
+                document.getElementById("view-main").style.display = "none";
+                document.getElementById("view-settings").style.display = "none";
                 document.getElementById("view-main").classList.remove("active");
                 document.getElementById("view-settings").classList.remove("active");
-                document.getElementById("view-meter").classList.add("active");
+                // Show Meter
+                const v = document.getElementById("view-meter");
+                v.style.display = "flex";
+                v.classList.add("active");
+            }
+            function showSettings() {
+                // Force Hide Others
+                document.getElementById("view-main").style.display = "none";
+                document.getElementById("view-meter").style.display = "none";
+                document.getElementById("view-main").classList.remove("active");
+                document.getElementById("view-meter").classList.remove("active");
+                // Show Settings
+                const v = document.getElementById("view-settings");
+                v.style.display = "flex";
+                v.classList.add("active");
             }
             function log(t) {
                 const el = document.getElementById("log");
