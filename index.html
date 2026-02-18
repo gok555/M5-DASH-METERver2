@@ -537,6 +537,31 @@
                 <div id="config-list-container" class="config-list">
                 </div>
             </div>
+            <!-- Generic Monitor Config (Moved Inside Settings) -->
+            <div class="control-row" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
+                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Generic Monitor Config</div>
+                <div class="config-row">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="font-size:0.7rem; color:#aaa;">ID (Hex)</span>
+                        <input type="text" id="rx-monitor-id-input" value="90" class="config-input" maxlength="3"
+                            style="width:60px;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="font-size:0.7rem; color:#aaa;">Index</span>
+                        <input type="number" id="rx-byte-index-input" value="2" class="config-input" min="0" max="7"
+                            style="width:50px;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="font-size:0.7rem; color:#aaa;">Mode</span>
+                        <select id="rx-mode-select" class="config-input" style="width:80px;">
+                            <option value="0">8-bit</option>
+                            <option value="1" selected>16-bit LE</option>
+                            <option value="2">16-bit BE</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" onclick="setRxConfig()">SET</button>
+                </div>
+            </div>
             <div class="control-row" style="margin-top: 10px;">
                 <button class="action-btn btn-gray" onclick="toggleFullscreen()">⛶ Toggle Fullscreen</button>
             </div>
@@ -571,38 +596,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Generic Monitor Config -->
-    <div class="control-group">
-        <h3>Generic Monitor</h3>
-        <div class="config-row">
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <span style="font-size:0.7rem; color:#aaa;">ID (Hex)</span>
-                <input type="text" id="rx-monitor-id-input" value="90" class="config-input" maxlength="3"
-                    style="width:60px;">
-            </div>
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <span style="font-size:0.7rem; color:#aaa;">Index</span>
-                <input type="number" id="rx-byte-index-input" value="2" class="config-input" min="0" max="7"
-                    style="width:50px;">
-            </div>
-            <div style="display:flex; flex-direction:column; gap:2px;">
-                <span style="font-size:0.7rem; color:#aaa;">Mode</span>
-                <select id="rx-mode-select" class="config-input" style="width:80px;">
-                    <option value="0">8-bit</option>
-                    <option value="1" selected>16-bit LE</option>
-                    <option value="2">16-bit BE</option>
-                </select>
-            </div>
-            <button class="action-btn" onclick="setRxConfig()">SET</button>
-        </div>
-        <!-- Monitor Value Display (Moved to Meter View) -->
-        <!-- 
-         <div style="margin-top:10px; background:#222; padding:10px; border-radius:8px; text-align:center;">
-            <span style="color:#aaa; font-size:0.8rem;">Monitor Value</span>
-            <div id="rx-monitor-val-OLD" style="font-size:1.5rem; color:#FFD700; font-family:monospace;">---</div>
-         </div>
-         -->
     </div>
     <div class="control-group">
         <h3>Manage Config</h3>
@@ -697,13 +690,11 @@
                     });
                 }
                 localStorage.setItem("tempWarnVal", tempWarnVal);
-                // ★ NEW: Init Monitor Inputs
                 const rId = document.getElementById("rx-monitor-id-input");
                 if (rId) rId.value = rxMonitorId;
                 const rIdx = document.getElementById("rx-byte-index-input");
                 if (rIdx) rIdx.value = rxByteIndex;
                 const rMode = document.getElementById("rx-mode-select");
-                if (rMode) rMode.value = rxMode;
                 if (rMode) rMode.value = rxMode;
             });
             /* --- Config UI Generation --- */
@@ -1141,11 +1132,20 @@
                 document.getElementById("view-settings").classList.remove("active");
                 document.getElementById("view-meter").classList.remove("active");
                 document.getElementById("view-main").classList.add("active");
+                // Ensure Monitor is valid
+                const monitor = document.getElementById("rx-monitor-display");
+                if (monitor) monitor.style.display = "none";
             }
             function showMeter() {
                 document.getElementById("view-main").classList.remove("active");
                 document.getElementById("view-settings").classList.remove("active");
                 document.getElementById("view-meter").classList.add("active");
+                // Show Monitor if data exists (check content)
+                const valEl = document.getElementById("rx-monitor-val");
+                const monitor = document.getElementById("rx-monitor-display");
+                if (valEl && valEl.textContent !== "---" && monitor) {
+                    monitor.style.display = "block";
+                }
             }
             function log(t) {
                 const el = document.getElementById("log");
