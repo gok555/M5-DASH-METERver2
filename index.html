@@ -437,7 +437,13 @@
         <button class="meter-header-btn" onclick="showMain()">↩️ Back</button>
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
             <div style="color:#666; font-size:1.5rem; margin-bottom:10px;">EXHAUST TEMP</div>
+            <div style="color:#666; font-size:1.5rem; margin-bottom:10px;">EXHAUST TEMP</div>
             <div id="meter-temp-display">--°C</div>
+            <!-- Generic Monitor Value (Added Here) -->
+            <div id="rx-monitor-display"
+                style="margin-top:20px; font-size:1.5rem; color:#FFD700; font-family:monospace; display:none; text-align:center;">
+                RX M: <span id="rx-monitor-val">---</span>
+            </div>
         </div>
     </div>
     <div id="view-main" class="view-container active">
