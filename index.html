@@ -1475,219 +1475,210 @@
                     updateCanStatus(st);
                 }
             }
-            /* --- Bit Reverse Helper --- */
-            function reverseBits(n) {
+            function updateBtnVisual(n, isActive) {
+                const btn = document.getElementById('btn-' + n);
+                if (!btn) return;
+                if (isActive) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
+            // Core function to send Specific State
+            function sendState(n, state) {
+                const btnIndex = n - 1;
+                btnStates[btnIndex] = state;
+                updateBtnVisual(n, state);
+                if (rxChar) {
+                    // Version 2.7: Send Configured Hex Value
+                    const valStr = state ? btnOnVals[btnIndex] : btnOffVals[btnIndex];
+                    let valInt = parseInt(valStr, 16);
+                    // Ver 3.2: Endian means Bit Reversal, NOT Byte Swap
+                    if (btnEndian[btnIndex] === 'little') {
+                        valInt = reverseBits(valInt);
+                    }
+                    // Target is always the button index + 1
+                    const targetN = btnIndex + 1;
+                    const cmd = `${targetN}=${valInt}`;
+                    rxChar.writeValue(new TextEncoder().encode(cmd))
+                        .catch(e => {
+                            // log("TX ERR");
+                        });
+                }
+            }
+            function reverseBits(b) {
+                b = b & 0xFF;
                 let r = 0;
                 for (let i = 0; i < 8; i++) {
-                    r = (r << 1) | (n & 1);
-                    n >>= 1;
+                    if ((b >> i) & 1) {
+                        r |= 1 << (7 - i);
+                    }
                 }
-                return r >>> 0;
+                return r;
             }
-            function updateBtnVisual(btnId, isOn) {
-                const btn = document.getElementById(`btn-${btnId}`);
-                if (btn) {
-                    if (isOn) btn.classList.add("active");
-                    else btn.classList.remove("active");
+            // Ver 4.5: Long Press Logic
+            // Replaces sendStateDelayed
+            // --- Interaction Handlers ---
+            async function handlePointerDown(n, e) {
+                if (e) {
+                    e.preventDefault();
+                    // e.target.setPointerCapture(e.pointerId); 
                 }
-            }
-            /* --- Button Actions --- */
-            function handleBtnPress(btnIndex) {
-                if (!rxChar) return; // Ignore if not connected
-                // Ver 4.2: Auth Check
-                if (btnAuth[btnIndex]) {
-                    // Logic: If Locked, we might need auth to actuate?
-                    // User requirement: "Once authenticated, it toggles lock state".
-                    // If the button is just "Locked", maybe it cannot be pressed?
-                    // For now, let's assume 'Lock' just prevents CONFIG changes, not actuation.
-                    // OR: asking for auth on every press? 
-                    // Let's implement: Auth prevents actuation if locked.
-                    // checkBiometricAuth().then(ok => { if(ok) doActuate... });
-                    // For speed, we will skip auth on actuation for now, assuming Lock is for Config protection.
-                }
-                const now = Date.now();
-                lastPulseTimes[btnIndex] = now;
-                const mode = btnModes[btnIndex];
-                if (mode === 'toggle') {
-                    // Toggle State
-                    const newState = !btnStates[btnIndex];
-                    btnStates[btnIndex] = newState;
-                    updateBtnVisual(btnIndex + 1, newState);
-                    // Send Command
-                    sendState(btnIndex + 1, newState);
-                } else {
-                    // Momentary Press (ON)
-                    btnStates[btnIndex] = true;
-                    updateBtnVisual(btnIndex + 1, true);
-                    const btn = document.getElementById(`btn-${btnIndex + 1}`);
-                    if (btn) btn.classList.add("pressing");
-                    sendState(btnIndex + 1, true);
-                    // Ver 4.5: Long Press Logic start
-                    // If we want to support 'Hold for 3s', we track start time.
-                    // For standard momentary: OFF is sent on Release.
-                }
-            }
-            function handleBtnRelease(btnIndex) {
-                if (!rxChar) return;
-                const mode = btnModes[btnIndex];
-                if (mode === 'momentary') {
-                    // Momentary Release (OFF)
-                    btnStates[btnIndex] = false;
-                    updateBtnVisual(btnIndex + 1, false);
-                    const btn = document.getElementById(`btn-${btnIndex + 1}`);
-                    if (btn) btn.classList.remove("pressing");
-                    sendState(btnIndex + 1, false);
-                }
-            }
-            // Send State Command
-            function sendState(btnId, isOn) {
-                if (!rxChar) return;
-                const idx = btnId - 1;
-                const valRaw = isOn ? btnOnVals[idx] : btnOffVals[idx];
-                const endian = btnEndian[idx];
-                let val = parseInt(valRaw, 16);
-                // Ver 3.0: Reverse if Little Endian
-                if (endian === 'little') {
-                    val = reverseBits(val);
-                }
-                const cmd = `BTN=${btnId},${val}`;
-                rxChar.writeValue(new TextEncoder().encode(cmd))
-                    .catch(e => console.log("TX Err"));
-                // Ver 4.4: Delays
-                const delay = isOn ? btnOnDelays[idx] : btnOffDelays[idx];
-                if (delay > 0) {
-                    log(`Delay ${delay}s...`);
-                }
+                // Instant Feedback
                 triggerFeedback();
-            }
-            /* --- Voice / Audio (Ver 5.0) --- */
-            function playVoice(type) {
-                // Simple placeholder for Web Speech API or Audio File
-                if ('speechSynthesis' in window) {
-                    const msg = new SpeechSynthesisUtterance();
-                    if (type === 'connected') msg.text = "Connected";
-                    if (type === 'warning-temp') msg.text = "Warning. High Exhaust Temperature.";
-                    window.speechSynthesis.speak(msg);
+                const btnEl = document.getElementById(`btn-${n}`);
+                if (btnEl) btnEl.classList.add('pressing'); // Instant Visual Cue
+                const idx = n - 1;
+                // Ver 4.0: Check Auth
+                if (btnAuth[idx]) {
+                    const authResult = await checkBiometricAuth();
+                    if (!authResult) {
+                        if (btnEl) btnEl.classList.remove('pressing'); // Remove cue if failed
+                        alert("🔒 Authentication Failed");
+                        return;
+                    }
+                }
+                // Calc Delay needed
+                // If currently OFF (false), we want to turn ON -> Use OnDelay
+                // If currently ON (true), we want to turn OFF -> Use OffDelay
+                const currentState = btnStates[idx];
+                const targetState = !currentState;
+                const delay = targetState ? btnOnDelays[idx] : btnOffDelays[idx];
+                if (delay > 0) {
+                    // Start Timer
+                    holdTimers[idx] = setTimeout(() => {
+                        executeAction(n);
+                        holdTimers[idx] = null;
+                        if (btnEl) btnEl.classList.remove('pressing');
+                    }, delay * 1000);
+                } else {
+                    // Immediate
+                    executeAction(n);
+                    if (btnEl) btnEl.classList.remove('pressing');
                 }
             }
-            /* --- Main Sound Toggle --- */
-            function toggleSoundMain() {
-                cfgSound = !cfgSound;
-                localStorage.setItem("cfgSound", JSON.stringify(cfgSound));
-                updateMainSoundIcon();
-                if (cfgSound) initAudio();
+            function handlePointerUp(n, e) {
+                if (e) e.preventDefault();
+                const idx = n - 1;
+                // Cancel Timer if it exists
+                if (holdTimers[idx]) {
+                    clearTimeout(holdTimers[idx]);
+                    holdTimers[idx] = null;
+                }
+                const btnEl = document.getElementById(`btn-${n}`);
+                if (btnEl) btnEl.classList.remove('pressing');
             }
-            function updateMainSoundIcon() {
-                const btn = document.getElementById("main-sound-btn");
-                if (btn) {
-                    btn.textContent = cfgSound ? "🔊" : "🔇";
-                    btn.style.opacity = cfgSound ? "1" : "0.5";
+            function executeAction(n) {
+                const idx = n - 1;
+                const isMomentary = (btnModes[idx] === 'momentary');
+                if (isMomentary) {
+                    triggerPulse(n);
+                } else {
+                    // Toggle Mode
+                    const newState = !btnStates[idx];
+                    sendState(n, newState);
                 }
             }
-            /* --- SET IO Config --- */
+            function triggerPulse(n) {
+                const idx = n - 1;
+                sendState(n, true); // ON
+                setTimeout(() => {
+                    sendState(n, false); // OFF
+                }, 150);
+                lastPulseTimes[idx] = Date.now();
+            }
             function setCanId() {
                 const el = document.getElementById("can-id-input");
-                let val = el.value.trim();
-                // Basic Validation
-                if (!/^[0-9A-Fa-f]{1,3}$/.test(val)) {
-                    alert("Invalid Hex ID (1-3 chars)");
-                    return;
-                }
-                val = val.toUpperCase();
-                // Send to Device
-                if (rxChar) {
-                    const cmd = `ID=${val}`;
-                    rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .then(() => {
-                            log(`Set ID=${val}`);
-                            canIdVal = val;
-                            localStorage.setItem("canIdVal", val);
-                            alert("CAN ID updated. Device may restart or reload.");
-                        })
-                        .catch(e => log("TX ID Err"));
+                const val = el.value;
+                if (val.match(/^[0-9A-Fa-f]+$/)) {
+                    log(`Set CAN ID: 0x${val}`);
+                    localStorage.setItem("canIdVal", val);
+                    canIdVal = val;
+                    // Send command to device
+                    if (rxChar) {
+                        const cmd = `ID=${val}`;
+                        rxChar.writeValue(new TextEncoder().encode(cmd))
+                            .catch(e => log("TX ERR ID"));
+                    }
                 } else {
-                    alert("Not Connected");
+                    alert("Invalid Hex ID");
                 }
             }
             function setKMeterId() {
                 const el = document.getElementById("k-meter-id-input");
-                let val = el.value.trim();
-                if (!/^[0-9A-Fa-f]{1,3}$/.test(val)) {
-                    alert("Invalid Hex ID");
-                    return;
-                }
-                val = val.toUpperCase();
-                if (rxChar) {
-                    const cmd = `KID=${val}`;
-                    rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .then(() => {
-                            log(`Set KID=${val}`);
-                            kMeterIdVal = val;
-                            localStorage.setItem("kMeterIdVal", val);
-                            alert("K-Meter ID updated.");
-                        })
-                        .catch(e => log("TX KID Err"));
+                const val = el.value;
+                if (val.match(/^[0-9A-Fa-f]+$/)) {
+                    log(`Set K-Meter ID: 0x${val}`);
+                    localStorage.setItem("kMeterIdVal", val);
+                    kMeterIdVal = val;
+                    // Send command to device
+                    if (rxChar) {
+                        const cmd = `KID=${val}`;
+                        rxChar.writeValue(new TextEncoder().encode(cmd))
+                            .catch(e => log("TX ERR KID"));
+                    }
                 } else {
-                    alert("Not Connected");
+                    alert("Invalid Hex ID");
                 }
             }
-            // ★ Ver 3.20 FIXED for Monitor ID
             function setRxConfig() {
                 const idEl = document.getElementById("rx-monitor-id-input");
                 const idxEl = document.getElementById("rx-byte-index-input");
                 const modeEl = document.getElementById("rx-mode-select");
-                let idVal = idEl.value.trim().toUpperCase();
-                let idxVal = idxEl.value;
-                let modeVal = modeEl.value;
-                if (!/^[0-9A-Fa-f]{1,3}$/.test(idVal)) {
-                    alert("Invalid RX Monitor ID");
+                const idVal = idEl.value;
+                const idxVal = idxEl.value;
+                const modeVal = modeEl.value;
+                // Validation
+                if (!idVal.match(/^[0-9A-Fa-f]+$/)) {
+                    alert("Invalid Hex ID");
                     return;
                 }
+                // Save
+                rxMonitorId = idVal;
+                rxByteIndex = idxVal;
+                rxMode = modeVal;
+                localStorage.setItem("rxMonitorId", rxMonitorId);
+                localStorage.setItem("rxByteIndex", rxByteIndex);
+                localStorage.setItem("rxMode", rxMode);
+                // Send: SET_RX=ID(Dec),IDX,MODE
+                // Convert Hex ID to Decimal for firmware
+                const idDec = parseInt(idVal, 16);
+                const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`;
+                log("TX: " + cmd);
                 if (rxChar) {
-                    // Send: SET_RX=ID(Hex),IDX,MODE
-                    // Fix: Do NOT parse to int/decimal. Send raw Hex string.
-                    // const idDec = parseInt(idVal, 16); // REMOVED
-                    const cmd = `SET_RX=${idVal},${idxVal},${modeVal}`;
                     rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .then(() => {
-                            log(`Sent: ${cmd}`);
-                            // Save to local storage
-                            localStorage.setItem("rxMonitorId", idVal);
-                            localStorage.setItem("rxByteIndex", idxVal);
-                            localStorage.setItem("rxMode", modeVal);
-                            alert("RX Monitor Configured.");
-                        })
-                        .catch(e => log("TX RxConfig Err: " + e));
-                } else {
-                    alert("Not Connected");
+                        .catch(e => log("TX ERR SET_RX"));
                 }
             }
-            /* --- Backup / Restore --- */
+            /* --- Import / Export Logic --- */
             function exportConfig() {
                 const config = {
-                    ver: "6.0",
-                    btnLabels,
-                    btnOnVals,
-                    btnOffVals,
-                    btnIcons,
-                    btnModes,
-                    btnEndian,
-                    btnColors,
-                    btnOnDelays,
-                    btnOffDelays,
-                    canIdVal,
-                    kMeterIdVal,
-                    rxMonitorId,
-                    rxByteIndex,
-                    rxMode,
-                    tempWarnVal
+                    version: "6.0.0",
+                    timestamp: new Date().toISOString(),
+                    btnLabels: btnLabels,
+                    btnModes: btnModes,
+                    btnColors: btnColors,
+                    btnOnVals: btnOnVals,
+                    btnOffVals: btnOffVals,
+                    btnEndian: btnEndian,
+                    btnIcons: btnIcons,
+                    btnAuth: btnAuth, // Ver 4.0
+                    btnOnDelays: btnOnDelays, // Ver 4.4
+                    btnOffDelays: btnOffDelays, // Ver 4.4
+                    cfgVibe: cfgVibe,
+                    cfgSound: cfgSound,
+                    canId: canIdVal,
+                    kMeterId: kMeterIdVal,
+                    tempWarnVal: tempWarnVal // ★ NEW
                 };
-                const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "m5_can_config.json";
-                a.click();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", "m5_can_config.json");
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                log("Config Exported");
             }
             function importConfig() {
                 document.getElementById('import-file').click();
@@ -1698,105 +1689,330 @@
                 const reader = new FileReader();
                 reader.onload = function (e) {
                     try {
-                        const c = JSON.parse(e.target.result);
-                        if (c.btnLabels) {
-                            btnLabels = c.btnLabels;
-                            btnOnVals = c.btnOnVals;
-                            btnOffVals = c.btnOffVals;
-                            btnIcons = c.btnIcons;
-                            btnModes = c.btnModes;
-                            btnEndian = c.btnEndian;
-                            btnColors = c.btnColors;
-                            if (c.btnOnDelays) btnOnDelays = c.btnOnDelays;
-                            if (c.btnOffDelays) btnOffDelays = c.btnOffDelays;
-                            if (c.canIdVal) canIdVal = c.canIdVal;
-                            if (c.kMeterIdVal) kMeterIdVal = c.kMeterIdVal;
-                            if (c.rxMonitorId) rxMonitorId = c.rxMonitorId;
-                            if (c.rxByteIndex) rxByteIndex = c.rxByteIndex;
-                            if (c.rxMode) rxMode = c.rxMode;
-                            if (c.tempWarnVal) tempWarnVal = c.tempWarnVal;
-                            // Save all
+                        const config = JSON.parse(e.target.result);
+                        // Validation / Restoration
+                        if (config.btnLabels && Array.isArray(config.btnLabels)) {
+                            btnLabels = config.btnLabels;
                             localStorage.setItem("btnLabels", JSON.stringify(btnLabels));
-                            localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals));
-                            localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals));
-                            localStorage.setItem("btnIcons", JSON.stringify(btnIcons));
-                            localStorage.setItem("btnModes", JSON.stringify(btnModes));
-                            localStorage.setItem("btnEndian", JSON.stringify(btnEndian));
-                            localStorage.setItem("btnColors", JSON.stringify(btnColors));
-                            localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
-                            localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
-                            localStorage.setItem("canIdVal", canIdVal);
-                            localStorage.setItem("kMeterIdVal", kMeterIdVal);
-                            localStorage.setItem("rxMonitorId", rxMonitorId);
-                            localStorage.setItem("rxByteIndex", rxByteIndex);
-                            localStorage.setItem("rxMode", rxMode);
-                            localStorage.setItem("tempWarnVal", tempWarnVal);
-                            alert("Config Loaded!");
-                            location.reload();
                         }
+                        if (config.btnModes && Array.isArray(config.btnModes)) {
+                            btnModes = config.btnModes;
+                            localStorage.setItem("btnModes", JSON.stringify(btnModes));
+                        }
+                        if (config.btnColors && Array.isArray(config.btnColors)) {
+                            btnColors = config.btnColors;
+                            localStorage.setItem("btnColors", JSON.stringify(btnColors));
+                        }
+                        if (config.btnOnVals && Array.isArray(config.btnOnVals)) {
+                            btnOnVals = config.btnOnVals;
+                            localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals));
+                        }
+                        if (config.btnOffVals && Array.isArray(config.btnOffVals)) {
+                            btnOffVals = config.btnOffVals;
+                            localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals));
+                        }
+                        if (config.btnEndian && Array.isArray(config.btnEndian)) {
+                            btnEndian = config.btnEndian;
+                            localStorage.setItem("btnEndian", JSON.stringify(btnEndian));
+                        }
+                        if (config.btnIcons && Array.isArray(config.btnIcons)) {
+                            btnIcons = config.btnIcons;
+                            localStorage.setItem("btnIcons", JSON.stringify(btnIcons));
+                        }
+                        if (config.btnAuth && Array.isArray(config.btnAuth)) { // Ver 4.0
+                            btnAuth = config.btnAuth;
+                            localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
+                        }
+                        if (config.cfgVibe !== undefined) {
+                            cfgVibe = config.cfgVibe;
+                            localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe));
+                        }
+                        if (config.cfgSound !== undefined) {
+                            cfgSound = config.cfgSound;
+                            localStorage.setItem("cfgSound", JSON.stringify(cfgSound));
+                        }
+                        if (config.canId) {
+                            document.getElementById("can-id-input").value = config.canId;
+                            canIdVal = config.canId; // Update global variable
+                            localStorage.setItem("canIdVal", canIdVal);
+                        }
+                        if (config.kMeterId) {
+                            const kInput = document.getElementById("k-meter-id-input");
+                            if (kInput) {
+                                kInput.value = config.kMeterId;
+                                kMeterIdVal = config.kMeterId;
+                                localStorage.setItem("kMeterIdVal", kMeterIdVal);
+                            }
+                        }
+                        // ★ NEW: Import Temp Warning
+                        if (config.tempWarnVal) {
+                            tempWarnVal = config.tempWarnVal;
+                            localStorage.setItem("tempWarnVal", tempWarnVal);
+                            const tInput = document.getElementById("temp-alarm-input");
+                            if (tInput) tInput.value = tempWarnVal;
+                        }
+                        // Ver 4.0 Handle missing auth array in old configs
+                        if (!btnAuth || !Array.isArray(btnAuth)) {
+                            btnAuth = Array(8).fill(false);
+                            localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
+                        }
+                        // Ver 4.6 Safety: If NO biometric credential exists on this device, FORCE UNLOCK all buttons
+                        if (!authCredentialId) {
+                            const hasLockedBtn = btnAuth.some(b => b === true);
+                            if (hasLockedBtn) {
+                                btnAuth = Array(8).fill(false);
+                                localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
+                                log("Safety: Locks removed (No Credential)");
+                                alert("⚠️ Configuration Loaded, but Button Locks were disabled because no Biometric Registration was found on this device.");
+                            }
+                        }
+                        // Ver 4.4: Import Delay Arrays
+                        if (config.btnOnDelays && Array.isArray(config.btnOnDelays)) {
+                            btnOnDelays = config.btnOnDelays;
+                            localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
+                        }
+                        if (config.btnOffDelays && Array.isArray(config.btnOffDelays)) {
+                            btnOffDelays = config.btnOffDelays;
+                            localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
+                        }
+                        // Ver 4.4: Handle missing delay arrays
+                        if (!btnOnDelays || !Array.isArray(btnOnDelays)) {
+                            btnOnDelays = config.btnOnDelays || Array(8).fill(0);
+                            localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
+                        }
+                        if (!btnOffDelays || !Array.isArray(btnOffDelays)) {
+                            btnOffDelays = config.btnOffDelays || Array(8).fill(0);
+                            localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
+                        }
+                        log("Config Loaded");
+                        alert("Configuration Loaded Successfully");
+                        // Refresh UI
+                        renderConfigList();
+                        // Refresh Keypad Visuals (Colors/Labels/Icons)
+                        renderKeypadGrid();
                     } catch (err) {
-                        alert("Invalid Config File");
+                        log("Import Err: " + err);
+                        alert("Failed to load config: Invalid JSON");
                     }
                 };
                 reader.readAsText(file);
+                // Reset input so same file can be selected again if needed
+                input.value = '';
             }
-            /* --- Grid Generation --- */
+            /* Init Keypad */
             function renderKeypadGrid() {
-                const grid = document.getElementById("keypad");
-                grid.innerHTML = "";
-                for (let i = 0; i < 8; i++) {
-                    const btn = document.createElement("button");
-                    btn.className = "key-btn";
-                    btn.id = `btn-${i + 1}`;
-                    btn.style.setProperty('--btn-color', btnColors[i]);
-                    // Label
-                    const lbl = document.createElement("span");
-                    lbl.id = `label-${i + 1}`;
-                    lbl.textContent = btnLabels[i];
-                    lbl.style.zIndex = "2";
-                    // Icon
-                    const iconKey = btnIcons[i];
+                const container = document.getElementById("keypad");
+                container.innerHTML = "";
+                for (let i = 1; i <= 8; i++) {
+                    const b = document.createElement("div");
+                    b.id = `btn-${i}`;
+                    b.className = "key-btn";
+                    const iconKey = btnIcons[i - 1];
+                    let innerHTML = '';
                     if (iconKey && iconKey !== 'none' && ICONS[iconKey]) {
-                        const ico = document.createElement("div");
-                        ico.innerHTML = ICONS[iconKey];
-                        ico.style.width = "40px";
-                        ico.style.height = "40px";
-                        ico.style.marginBottom = "5px";
-                        ico.style.zIndex = "2";
-                        btn.appendChild(ico);
+                        // Icon + Label
+                        innerHTML = `
+              <div style="width:50%; height:50%; margin-bottom:5px;">${ICONS[iconKey]}</div>
+              <span id="label-${i}" class="btn-label" style="font-size:0.9rem;">${btnLabels[i - 1]}</span>
+            `;
+                    } else {
+                        // Label Only
+                        innerHTML = `
+              <span id="label-${i}" class="btn-label">${btnLabels[i - 1]}</span>
+            `;
                     }
-                    btn.appendChild(lbl);
-                    // Events
-                    // Mouse
-                    btn.addEventListener("mousedown", (e) => {
-                        e.preventDefault();
-                        handleBtnPress(i);
-                    });
-                    btn.addEventListener("mouseup", (e) => {
-                        e.preventDefault();
-                        handleBtnRelease(i);
-                    });
-                    btn.addEventListener("mouseleave", (e) => {
-                        e.preventDefault();
-                        handleBtnRelease(i);
-                    });
-                    // Touch
-                    btn.addEventListener("touchstart", (e) => {
-                        e.preventDefault(); // Prevent scroll/zoom
-                        handleBtnPress(i);
-                    });
-                    btn.addEventListener("touchend", (e) => {
-                        e.preventDefault();
-                        handleBtnRelease(i);
-                    });
-                    grid.appendChild(btn);
+                    b.innerHTML = innerHTML;
+                    b.style.setProperty('--btn-color', btnColors[i - 1]);
+                    // Ver 4.5: Pointer Events for Long Press
+                    b.addEventListener('pointerdown', (e) => handlePointerDown(i, e));
+                    b.addEventListener('pointerup', (e) => handlePointerUp(i, e));
+                    b.addEventListener('pointerleave', (e) => handlePointerUp(i, e)); // Treat leave as cancel/up
+                    // Ver 4.7: Force suppress system context menu/vibration
+                    b.addEventListener('touchstart', (e) => {
+                        if (e.cancelable) e.preventDefault();
+                    }, { passive: false });
+                    b.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); return false; });
+                    container.appendChild(b);
                 }
             }
-            // Init
-            renderKeypadGrid();
+            // Global Context Menu Block (Fixed for Paste)
+            window.addEventListener('contextmenu', (e) => {
+                // Allow context menu for Inputs/Textareas
+                if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+                    return true;
+                }
+                e.preventDefault();
+                return false;
+            }, { capture: true });
+            // Initial Render
+            renderConfigList();
+            renderKeypadGrid(); // Fixed from 5.0.1
+            // Init Status (Show Overlay)
             updateStatus(false);
-            updateFeedbackUI(); // Set Init UI State
+            function updateMainSoundIcon() {
+                const btn = document.getElementById("main-sound-btn");
+                if (btn) {
+                    btn.innerHTML = cfgSound ? "🔊" : "🔇";
+                    btn.style.color = cfgSound ? "#0f0" : "#888";
+                }
+            }
+            function toggleSoundMain() {
+                setSound(!cfgSound);
+                updateMainSoundIcon();
+            }
+            // Update icon on load
+            updateMainSoundIcon();
+            async function handleStartConnect() {
+                try {
+                    // 1. Request Fullscreen (Priority: User Gesture)
+                    enterFullscreen();
+                    // 2. Init Audio Context (User Gesture)
+                    initAudio();
+                    // 2. Connect Bluetooth
+                    await connect();
+                    // 3. Keep Awake (WakeLock)
+                    requestWakeLock();
+                } catch (e) {
+                    console.error("Start Connect Error:", e);
+                    log("Err: " + e);
+                }
+            }
+            /* =========================================
+               VOICE CONTROL ADD-ON (Ver 5.1.1 Fixed)
+               ========================================= */
+            const synth = window.speechSynthesis;
+            function speakVoice(text) {
+                if (synth.speaking) synth.cancel(); // Cancel previous speech
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = "ja-JP";
+                utter.rate = 1.2;
+                synth.speak(utter);
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let isListening = false;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ja-JP';
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.onresult = (event) => {
+                    const last = event.results.length - 1;
+                    const transcript = event.results[last][0].transcript.trim();
+                    log("Voice: " + transcript);
+                    let matched = false;
+                    btnLabels.forEach((label, index) => {
+                        const cleanLabel = label.replace(/\s+/g, '');
+                        const cleanVoice = transcript.replace(/\s+/g, '');
+                        if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) {
+                            matched = true;
+                            handleVoiceCommand(index, transcript); // Pass transcript to check keywords
+                        }
+                    });
+                };
+                recognition.onend = () => {
+                    if (isListening) recognition.start();
+                    updateMicIcon();
+                };
+                recognition.onerror = (e) => {
+                    console.log("Voice Err:", e.error);
+                    if (e.error === 'not-allowed') {
+                        isListening = false;
+                        speakVoice("マイクの使用が許可されていません");
+                        updateMicIcon();
+                    }
+                };
+            }
+            function handleVoiceCommand(index, transcript) {
+                const btnNum = index + 1;
+                const currentState = btnStates[index];
+                const label = btnLabels[index];
+                const isLock = btnAuth[index];
+                // A. Check Lock
+                if (isLock) {
+                    speakVoice(label + "はロックされています。手動で操作してください。");
+                    return;
+                }
+                // B. Momentary
+                if (btnModes[index] === 'momentary') {
+                    executeAction(btnNum);
+                    speakVoice(label + "、実行");
+                    return;
+                }
+                // C. Toggle Logic with OFF Keyword Check
+                // Check for OFF keywords in the spoken text
+                const isOffCommand = transcript.includes("オフ") ||
+                    transcript.includes("停止") ||
+                    transcript.includes("切") ||
+                    transcript.toLowerCase().includes("off");
+                if (currentState) {
+                    // Currently ON
+                    if (isOffCommand) {
+                        // User wants OFF -> Turn OFF
+                        executeAction(btnNum);
+                        speakVoice(label + "をオフにしました");
+                    } else {
+                        // User didn't say OFF -> Assume ON attempt
+                        speakVoice(label + "は、既にオンです");
+                    }
+                } else {
+                    // Currently OFF
+                    if (isOffCommand) {
+                        // User wants OFF but it's already OFF
+                        speakVoice(label + "は、既にオフです");
+                    } else {
+                        // User wants ON (or neutral) -> Turn ON
+                        executeAction(btnNum);
+                        speakVoice(label + "をオンにしました");
+                    }
+                }
+            }
+            function injectMicButton() {
+                const headerGroup = document.querySelector('.main-header > div:last-child');
+                if (!headerGroup) return;
+                const micBtn = document.createElement('button');
+                micBtn.id = "mic-toggle-btn";
+                micBtn.className = "header-btn";
+                micBtn.innerHTML = "🎙️";
+                micBtn.style.fontSize = "1.2rem";
+                micBtn.onclick = toggleVoiceControl;
+                // Insert before Settings button
+                headerGroup.insertBefore(micBtn, headerGroup.firstChild);
+            }
+            function toggleVoiceControl() {
+                if (!recognition) {
+                    alert("このブラウザは音声認識に対応していません");
+                    return;
+                }
+                isListening = !isListening;
+                if (isListening) {
+                    recognition.start();
+                    speakVoice("音声操作、開始");
+                } else {
+                    recognition.stop();
+                    speakVoice("停止します");
+                }
+                updateMicIcon();
+            }
+            function updateMicIcon() {
+                const micBtn = document.getElementById("mic-toggle-btn");
+                if (!micBtn) return;
+                if (isListening) {
+                    micBtn.innerHTML = "🔴";
+                    micBtn.style.color = "#ff4444";
+                    micBtn.style.animation = "pulse-mic 1.5s infinite";
+                } else {
+                    micBtn.innerHTML = "🎙️";
+                    micBtn.style.color = "#aaa";
+                    micBtn.style.animation = "none";
+                }
+            }
+            // Init Mic Button
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', injectMicButton);
+            } else {
+                injectMicButton();
+            }
         </script>
-    </div>
 </body>
 </html>
