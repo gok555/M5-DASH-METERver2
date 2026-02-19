@@ -1366,6 +1366,8 @@
                     txChar = await svc.getCharacteristic(TX_UUID);
                     await txChar.startNotifications();
                     txChar.addEventListener('characteristicvaluechanged', handleNotifications);
+                    // Fix: Force Main View to clear any overlapping elements on initial load
+                    showMain();
                     updateStatus(true);
                     log("BLE Ready");
                     // Sync Config Automatically
