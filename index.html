@@ -677,7 +677,7 @@
                     onchange="handleFileSelect(this)">
             </div>
             <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">
-                Ver 6.0.0 (Meter View)<br>
+                Atom S3 Keypad & Dash Meter Ver 6.3<br>
                 M5Atom S3 CAN
             </div>
         </div>
@@ -1307,16 +1307,16 @@
                     ind.style.borderColor = "#00ff00";
                     ind.classList.remove("stalled");
                     ind.classList.add("connected");
-                }
-                clearTimeout(watchdogTimer);
-                watchdogTimer = setTimeout(() => {
-                    // Heartbeat lost
-                    ind.textContent = "⚠️ No Resp";
-                    ind.style.color = "orange";
-                    ind.style.borderColor = "orange"; // Orange
-                    ind.classList.remove("connected");
-                    ind.classList.add("stalled");
-                    // Optional: Auto disconnect logic? For now just visual warning.
+                    clearTimeout(watchdogTimer);
+                    watchdogTimer = setTimeout(() => {
+                        // Heartbeat lost
+                        ind.textContent = "⚠️ No Resp";
+                        ind.style.color = "orange";
+                        ind.style.borderColor = "orange"; // Orange
+                        ind.classList.remove("connected");
+                        ind.classList.add("stalled");
+                        // Optional: Auto disconnect logic? For now just visual warning.
+                    }, WATCHDOG_TIMEOUT);
                 }, WATCHDOG_TIMEOUT);
             }
             function updateCanStatus(st) {
