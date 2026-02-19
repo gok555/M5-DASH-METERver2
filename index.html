@@ -1143,13 +1143,6 @@
                 overlay.style.display = 'flex';
             }
             function closeIconPicker() {
-                document.getElementById('icon-picker
-The model's generation exceeded the maximum output token limit.
-
-index.html
- の残りの部分を表示します。(Ver 6.3 続き)
-
-function closeIconPicker() {
                 document.getElementById('icon-picker-overlay').style.display = 'none';
             }
             function selectIcon(iconKey) {
@@ -1649,16 +1642,8 @@ function closeIconPicker() {
                 localStorage.setItem("rxMode", rxMode);
                 // Send: SET_RX=ID(Dec),IDX,MODE
                 // Convert Hex ID to Decimal for firmware
-                let idDec = 0;
-                try {
-                    idDec = parseInt(idVal, 16);
-                } catch (e) {
-                    alert("ID Parse Error");
-                    return;
-                }
+                const idDec = parseInt(idVal, 16);
                 const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`;
-                // Debug Log
-                log(`Config Monitor: ${idVal} (Hex) -> ${idDec} (Dec)`);
                 log("TX: " + cmd);
                 if (rxChar) {
                     rxChar.writeValue(new TextEncoder().encode(cmd))
