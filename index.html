@@ -1642,8 +1642,16 @@
                 localStorage.setItem("rxMode", rxMode);
                 // Send: SET_RX=ID(Dec),IDX,MODE
                 // Convert Hex ID to Decimal for firmware
-                const idDec = parseInt(idVal, 16);
+                let idDec = 0;
+                try {
+                    idDec = parseInt(idVal, 16);
+                } catch (e) {
+                    alert("ID Parse Error");
+                    return;
+                }
                 const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`;
+                // Debug Log
+                log(`Config Monitor: ${idVal} (Hex) -> ${idDec} (Dec)`);
                 log("TX: " + cmd);
                 if (rxChar) {
                     rxChar.writeValue(new TextEncoder().encode(cmd))
