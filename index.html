@@ -698,7 +698,7 @@
         </div>
     </div>
     <div class="control-group">
-        <h3>Manage Config</h3>
+        <!-- Manange Config Header Removed -->
         <script>
             const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
             const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -1301,8 +1301,8 @@
                 if (!isConnected) return;
                 const ind = document.getElementById("status-display");
                 // Restore "Connected" visual if it was stalled
-                if (ind.textContent.includes("No Response")) {
-                    ind.textContent = "🟢 Connected";
+                if (ind.textContent.includes("No Resp")) {
+                    ind.textContent = "🟢 BLE";
                     ind.style.color = "#00ff00"; // Green
                     ind.style.borderColor = "#00ff00";
                     ind.classList.remove("stalled");
@@ -1311,7 +1311,7 @@
                 clearTimeout(watchdogTimer);
                 watchdogTimer = setTimeout(() => {
                     // Heartbeat lost
-                    ind.textContent = "⚠️ No Response";
+                    ind.textContent = "⚠️ No Resp";
                     ind.style.color = "orange";
                     ind.style.borderColor = "orange"; // Orange
                     ind.classList.remove("connected");
