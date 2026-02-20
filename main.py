@@ -1,294 +1,612 @@
-# Version 1.2.2 - BLE Fix + Stability
-# Ported from M5Core2 U085 CAN Receiver to UIFlow 2.0 (Mini CAN Unit)
-import os, sys, io
 import M5
 from M5 import *
-from unit import MiniCANUnit
 import time
-import machine
+from unit import CANUnit, KMeterUnit
+from hardware import I2C, Pin
+import bluetooth
 import struct
-# --- BLE Configuration ---
-ble_available = False
-try:
-    import bluetooth
-    from micropython import const
-    ble_available = True
-    print("BLE Lib OK")
-except ImportError:
-    print("BLE Library not found")
-_BLE_UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-_BLE_TX_UUID   = bluetooth.UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
-_BLE_RX_UUID   = bluetooth.UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
-# --- Configuration ---
-CAN_TX_PIN = 32
-CAN_RX_PIN = 33
-CAN_BAUDRATE = 1000000 # 1Mbps
-CAN_ID_1 = 144
-CAN_ID_2 = 145
-# --- Global Variables ---
-can_unit = None
-ble_uart = None
-data_buffer_144 = bytearray(8)
-data_buffer_145 = bytearray(8)
-last_recv_time = 0
-is_online = False
-update_counter = 0
-last_ble_send_time = 0
-# --- UI Widgets ---
-lbl_status = None
-lbl_id1 = None
-lbl_id2 = None
-lbl_id3 = None
-lbl_id4 = None
-lbl_id5 = None
-lbl_id6 = None
-# -------------------------------------------------------------------------
-# BLE Helper Class
-# -------------------------------------------------------------------------
+from micropython import const
+from esp32 import NVS
+
+# ==========================================
+# ATOM S3 + ATOM CAN Base (Full BLE Ver)
+# Ver 3.8: Multi-Monitor Support (7 Slots)
+# ==========================================
+
+# --- Configuration for ATOM CAN Base ---
+TX_PIN = 6
+RX_PIN = 5
+# ---------------------------------------
+
+can_tx_id = 0x100
+k_meter_id = 0x200
+
+# --- Generic Monitor Config (Array for 7 Slots) ---
+# Each slot: [id, idx, mode]
+# Slot 0 is the "Main" monitor (Backward compatible)
+rx_monitors = [
+    [0x90, 2, 1], # Slot 0
+    [0x90, 2, 1], # Slot 1
+    [0x90, 2, 1], # Slot 2
+    [0x90, 2, 1], # Slot 3
+    [0x90, 2, 1], # Slot 4
+    [0x90, 2, 1], # Slot 5
+    [0x90, 2, 1]  # Slot 6
+]
+
+# --- Deferred Config Request (Tuples) ---
+rx_config_req = None  # (slot, id, idx, mode)
+
+nvs = None
+
+def init_nvs():
+    global nvs, can_tx_id, k_meter_id, rx_monitors
+    try:
+        nvs = NVS("can_app")
+        print("NVS Init OK (can_app)")
+    except:
+        try:
+            nvs = NVS("m5_config") # Fallback namespace
+            print("NVS Init OK (m5_config)")
+        except:
+            nvs = None
+            print("NVS Init Failed")
+            
+    print(">>> FIRMWARE UPDATED: VER 3.8 (MULTI-MONITOR) <<<")
+    
+    if nvs:
+        try:
+            can_tx_id = nvs.get_i32("my_id")
+            print("Loaded ID:", hex(can_tx_id))
+        except OSError: pass
+
+        try:
+            k_meter_id = nvs.get_i32("k_meter_id")
+            print("Loaded KID:", hex(k_meter_id))
+        except OSError: pass
+        
+        # --- Load Generic Monitor Configs ---
+        # Slot 0: Use legacy keys (rx_id, rx_idx, rx_m) for backward compatibility
+        try:
+            rx_monitors[0][0] = nvs.get_i32("rx_id")
+            rx_monitors[0][1] = nvs.get_i32("rx_idx")
+            rx_monitors[0][2] = nvs.get_i32("rx_m")
+            print("Loaded Slot 0 (Legacy):", hex(rx_monitors[0][0]))
+        except OSError: pass
+
+        # Slot 1-6: Use new keys (rxN_id, rxN_idx, rxN_m)
+        for i in range(1, 7):
+            try:
+                rx_monitors[i][0] = nvs.get_i32(f"rx{i}_id")
+                rx_monitors[i][1] = nvs.get_i32(f"rx{i}_idx")
+                rx_monitors[i][2] = nvs.get_i32(f"rx{i}_m")
+                # print(f"Loaded Slot {i}:", hex(rx_monitors[i][0]))
+            except OSError: pass
+
+def load_btn_nvs():
+    if not nvs: return
+    try:
+        updated = False
+        for i in range(8):
+            key_off = f"btn{i+1}_off"
+            try:
+                # Load OFF value and set as initial state
+                off_val = nvs.get_i32(key_off)
+                can_state[i] = off_val & 0xFF
+                updated = True
+            except OSError:
+                pass # Key not found, keep default 0
+        if updated:
+            print("Loaded NVS Btn Config")
+    except Exception as e:
+        print("NVS Load Err:", e)
+
+DEVICE_NAME = "M5AtomS3_CAN_Base"
+FIFO = 0
+can_state = bytearray(8)
+can_error = False
+
+# --- Global Display Variables ---
+last_rx_id = 0
+last_rx_monitor_val = "---" # Initial Monitor Value (Slot 0)
+last_temp_disp = "0"
+rx_count = 0  
+
+UART_UUID = bluetooth.UUID("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
+UART_TX   = bluetooth.UUID("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
+UART_RX   = bluetooth.UUID("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
+
+_IRQ_CENTRAL_CONNECT    = const(1)
+_IRQ_CENTRAL_DISCONNECT = const(2)
+_IRQ_GATTS_WRITE        = const(3)
+
 class BLEUART:
-    def __init__(self, ble, name="M5CAN"):
+    def __init__(self, ble):
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._tx_handle, self._rx_handle),) = self._ble.gatts_register_services((
-            (_BLE_UART_UUID, ((_BLE_TX_UUID, bluetooth.FLAG_NOTIFY), (_BLE_RX_UUID, bluetooth.FLAG_WRITE),)),
-        ))
+        ((self._tx, self._rx),) = self._ble.gatts_register_services([
+            (UART_UUID, (
+                (UART_TX, bluetooth.FLAG_NOTIFY),
+                (UART_RX, bluetooth.FLAG_WRITE),
+            )),
+        ])
         self._connections = set()
-        # advertising_payload: Flags(3) + Name(Length+2) + ServiceUUID(18)
-        # Total limit: 31 bytes.
-        # "M5CAN" = 5 chars -> 7 bytes.
-        # Flags = 3 bytes.
-        # ServiceUUID = 18 bytes.
-        # Total = 28 bytes. Fits!
-        # Original "M5_CAN_MONITOR" = 14 chars -> 16 bytes.
-        # Total = 3 + 16 + 18 = 37 bytes -> ERROR -18 (EINVAL)
-        self._payload = self.advertising_payload(name=name, services=[_BLE_UART_UUID])
+        self._rx_cb = None
+        self._adv_payload = self._get_adv_payload(DEVICE_NAME)
         self._advertise()
+
+    def _get_adv_payload(self, name):
+        name_bytes = name.encode()
+        return b'\x02\x01\x06' + bytes([len(name_bytes)+1, 0x09]) + name_bytes
+
+    def _advertise(self):
+        try: self._ble.gap_advertise(100_000, self._adv_payload)
+        except: pass
+
     def _irq(self, event, data):
-        if event == 1: # Connect
+        if event == _IRQ_CENTRAL_CONNECT:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
-            print("BLE Connected")
-        elif event == 2: # Disconnect
+            time.sleep(0.5)
+            self.send_state_sync()
+            time.sleep(0.1)
+            self.send_config()
+        elif event == _IRQ_CENTRAL_DISCONNECT:
             conn_handle, _, _ = data
             if conn_handle in self._connections:
                 self._connections.remove(conn_handle)
             self._advertise()
-            print("BLE Disconnected")
-    def _advertise(self):
-        self._ble.gap_advertise(500000, adv_data=self._payload)
+        elif event == _IRQ_GATTS_WRITE:
+            if self._rx_cb: self._rx_cb(self._ble.gatts_read(self._rx))
+
     def send(self, data):
         for conn_handle in self._connections:
-            try:
-                self._ble.gatts_notify(conn_handle, self._tx_handle, data)
+            try: self._ble.gatts_notify(conn_handle, self._tx, data)
             except: pass
-            
-    def advertising_payload(self, limited_disc=False, br_edr=False, name=None, services=None, appearance=0):
-        # Helper to pack advertising data
-        payload = bytearray()
-        def _append(adv_type, value):
-            nonlocal payload
-            payload += struct.pack("BB", len(value) + 1, adv_type) + value
+
+    def send_state_sync(self):
+        self.send(("STATE=" + ",".join(str(b) for b in can_state)).encode())
         
-        _append(0x01, struct.pack("B", (0x02 if limited_disc else 0x06) + (0x00 if br_edr else 0x04)))
+    def send_status(self, is_err):
+        self.send((f"STATUS={'CAN_ERR' if is_err else 'CAN_OK'}").encode())
         
-        if name: _append(0x09, name)
-        
-        # If services don't fit, they should go in scan response, but for simplicity here we keep it small.
-        if services:
-            for uuid in services:
-                b_uuid = bytes(uuid)
-                if len(b_uuid) == 2:
-                    _append(0x03, b_uuid)
-                elif len(b_uuid) == 4:
-                    _append(0x05, b_uuid)
-                elif len(b_uuid) == 16:
-                    _append(0x07, b_uuid)
-        return payload
-# -------------------------------------------------------------------------
-# UI & Logic
-# -------------------------------------------------------------------------
-def setup_ui():
-    global lbl_status, lbl_id1, lbl_id2, lbl_id3, lbl_id4, lbl_id5, lbl_id6
+    def send_config(self):
+        self.send((f"ID={hex(can_tx_id)}").encode())
+        time.sleep(0.05)
+        self.send((f"KID={hex(k_meter_id)}").encode())
+        time.sleep(0.05)
+        # Send initial RX Monitor Config (Slot 0 only for confirm)
+        self.send((f"RXID={hex(rx_monitors[0][0])}").encode())
+
+    def on_rx(self, cb):
+        self._rx_cb = cb
+
+def detect_baudrate():
+    M5.Display.clear()
+    M5.Display.setCursor(0, 0)
+    M5.Display.setTextSize(2)
+    M5.Display.setTextColor(0xFFFF, 0x0000)
+    M5.Display.print("Detecting\nBaudrate...")
+    print("--- Auto Baudrate Detection ---")
     
-    Widgets.fillScreen(0x121212)
-    # Status Label
-    lbl_status = Widgets.Label("INIT...", 95, 7, 1.0, 0x999999, 0x121212, Widgets.FONTS.DejaVu18)
-    
-    # Headers
-    Widgets.Label("IAT", 125, 66, 1.0, 0x0afcf0, 0x121212, Widgets.FONTS.DejaVu18)
-    Widgets.Label("RPM", 103, 107, 1.0, 0xf5f1f1, 0x121212, Widgets.FONTS.DejaVu12)
-    Widgets.Label("MAP", 87, 189, 1.0, 0x0bf20c, 0x121212, Widgets.FONTS.DejaVu18)
-    Widgets.Label("AFR", 253, 68, 1.0, 0xe809fc, 0x121212, Widgets.FONTS.DejaVu12)
-    Widgets.Label("VOLT", 248, 126, 1.0, 0xf8d306, 0x121212, Widgets.FONTS.DejaVu18)
-    Widgets.Label("EGT", 245, 189, 1.0, 0xfc0707, 0x121212, Widgets.FONTS.DejaVu18)
-    
-    # Values
-    lbl_id1 = Widgets.Label("---", 12, 57, 1.0, 0x07f5ee, 0x121212, Widgets.FONTS.DejaVu24)
-    lbl_id2 = Widgets.Label("---", 12, 118, 1.0, 0xf9f9f9, 0x121212, Widgets.FONTS.DejaVu24)
-    lbl_id3 = Widgets.Label("---", 12, 180, 1.0, 0x2bf507, 0x121212, Widgets.FONTS.DejaVu24)
-    lbl_id4 = Widgets.Label("---", 176, 57, 1.0, 0xea07f5, 0x121212, Widgets.FONTS.DejaVu24)
-    lbl_id5 = Widgets.Label("---", 170, 118, 1.0, 0xf5c807, 0x121212, Widgets.FONTS.DejaVu24)
-    lbl_id6 = Widgets.Label("---", 170, 180, 1.0, 0xf51907, 0x121212, Widgets.FONTS.DejaVu24)
-    
-    Widgets.Label("Ver 1.2.2", 5, 220, 1.0, 0xAAAAAA, 0x121212, Widgets.FONTS.DejaVu12)
-def get_be_16bit(data, index_1based):
-    if data is None: return 0
-    pos = (index_1based - 1) * 2
-    if pos + 1 >= len(data): return 0
-    return (data[pos] << 8) | data[pos+1]
-def update_display_logic():
-    global update_counter
-    # Multiplexing updates
-    if update_counter % 2 == 0:
-        val = get_be_16bit(data_buffer_144, 1)
-        lbl_id1.setText(str(val))
-        
-    if update_counter % 8 == 2:
-        val = get_be_16bit(data_buffer_144, 2)
-        lbl_id2.setText(str(val))
-        
-    if update_counter % 10 == 6:
-        val = get_be_16bit(data_buffer_144, 3)
-        lbl_id3.setText(str(val - 100))
-        
-    if update_counter % 6 == 2:
-        val = get_be_16bit(data_buffer_145, 1)
-        lbl_id4.setText("{:.1f}".format(val * 0.1))
-    if update_counter % 6 == 4:
-        val = get_be_16bit(data_buffer_145, 2)
-        lbl_id5.setText("{:.1f}V".format(val * 0.01))
-        
-    if update_counter % 10 == 8:
-        val = get_be_16bit(data_buffer_145, 3)
-        lbl_id6.setText(str(val))
-    update_counter += 1
-    if update_counter >= 10:
-        update_counter = 0
-def setup():
-    global can_unit, ble_uart
-    
-    # 1. Reset I2C interference pins (Stability Fix from Ver 1.1.0)
     try:
-        p32 = machine.Pin(32, machine.Pin.IN)
-        p33 = machine.Pin(33, machine.Pin.IN)
-        time.sleep_ms(100)
-    except: pass
-    M5.begin()
-    setup_ui()
-    
-    # 2. BLE Setup
-    print("Initializing BLE...")
-    try:
-        if ble_available:
-            ble = bluetooth.BLE()
-            # Try to force deinit in case previous run left it weird
-            ble.active(False)
-            time.sleep_ms(200)
-            
-            # Using shorter name to fit in 31-byte Advertising Packet
-            ble_uart = BLEUART(ble, name="M5CAN") 
-            print("BLE Started! (Name: M5CAN)")
-            Widgets.Label("BLE OK", 65, 220, 1.0, 0x00FF00, 0x121212, Widgets.FONTS.DejaVu12)
-        else:
-            print("BLE Module Missing")
-            Widgets.Label("BLE Missing", 65, 220, 1.0, 0xFF0000, 0x121212, Widgets.FONTS.DejaVu12)
-    except Exception as e:
-        print("BLE Init Failed:", e)
-        Widgets.Label("BLE Err: " + str(e), 5, 220, 1.0, 0xFF0000, 0x121212, Widgets.FONTS.DejaVu12)
-    # 3. CAN Setup (with Hardware Filter)
-    print("Initializing CAN...")
-    try:
-        can_unit = MiniCANUnit(port=(CAN_RX_PIN, CAN_TX_PIN), mode=MiniCANUnit.NORMAL, baudrate=CAN_BAUDRATE)
-        
-        # --- Hardware Filter Setup (Stability Fix from Ver 1.1.0) ---
-        try:
-            can_unit.setfilter(0, MiniCANUnit.MASK16, 0, (0x90, 0x7FE))
-            print("CAN Filter Enabled")
-        except Exception as e:
-            print("Filter Init Error:", e)
-        print("CAN Initialized Success")
-        lbl_status.setText("OFF")
-    except Exception as e:
-        lbl_status.setText("CAN Err")
-        print("CAN Init Error:", e)
-def loop():
-    global last_recv_time, is_online, last_ble_send_time
-    M5.update()
-    
-    # CAN Reception
-    if can_unit:
-        try:
-            msg = can_unit.recv(0, timeout=0) 
-            if msg:
-                can_id = msg[0]
-                data = msg[4] 
-                
-                if can_id == CAN_ID_1:
-                    data_buffer_144[:] = data
-                elif can_id == CAN_ID_2:
-                    data_buffer_145[:] = data
-                
-                if can_id in (CAN_ID_1, CAN_ID_2):
-                    last_recv_time = time.ticks_ms()
+        # Loop attempts
+        for attempt in range(1, 4): 
+            print(f"Attempt {attempt}...")
+            for rate in [1000000, 500000]:
+                print(f"  Trying {rate}...")
+                can = None
+                try:
+                    can = CANUnit(id=0, port=(TX_PIN, RX_PIN), mode=CANUnit.NORMAL, baudrate=rate)
                     
-                    if not is_online:
-                        is_online = True
-                        lbl_status.setText("ONLINE")
-                        lbl_status.setColor(0x33ff33)
-        except Exception:
-            pass
-    # Status Monitor
-    if is_online:
-        if time.ticks_diff(time.ticks_ms(), last_recv_time) > 1500:
-            is_online = False
-            lbl_status.setText("OFF")
-            lbl_status.setColor(0x999999)
-            
-    # Display Update
-    update_display_logic()
+                    # Listen for traffic (1.5 sec)
+                    start = time.ticks_ms()
+                    detected = False
+                    
+                    while time.ticks_diff(time.ticks_ms(), start) < 1500:
+                        try:
+                            # Check RX FIFO
+                            if can.any(0) > 0: 
+                                print(f"  >> TRAFFIC DETECTED at {rate}!")
+                                detected = True
+                                break
+                        except: pass
+                        time.sleep_ms(50)
+                        
+                    if hasattr(can, 'deinit'): can.deinit()
+                    
+                    if detected:
+                        print(f"LOCKED Baudrate: {rate}")
+                        return rate
+                        
+                except Exception as e:
+                    print(f"  Error at {rate}: {e}")
+                    if can and hasattr(can, 'deinit'): can.deinit()
+                
+                time.sleep_ms(100)
+                
+    except KeyboardInterrupt:
+        print("Baudrate Detect Interrupt")
+        return 1000000
+        
+    print("Detection Failed, Defaulting to 1000000")
+    return 1000000 
+
+def on_ble_rx(data):
+    # ★ FIX: rx_monitors used instead of single vars
+    global can_state, can_tx_id, k_meter_id, rx_monitors, rx_config_req
     
-    # BLE Send (Approx 5Hz)
     try:
-        if ble_uart and is_online:
-            now = time.ticks_ms()
-            if time.ticks_diff(now, last_ble_send_time) > 200: 
-                last_ble_send_time = now
-                
-                # Values
-                iat = get_be_16bit(data_buffer_144, 1)
-                rpm = get_be_16bit(data_buffer_144, 2)
-                map_val = get_be_16bit(data_buffer_144, 3) - 100
-                afr = get_be_16bit(data_buffer_145, 1) * 0.1
-                volt = get_be_16bit(data_buffer_145, 2) * 0.01
-                egt = get_be_16bit(data_buffer_145, 3)
-                
-                # CSV Format: RPM,MAP,AFR,IAT,VOLT,EGT
-                # Add \n for line break
-                send_str = "{},{},{:.1f},{},{:.1f},{}\n".format(rpm, map_val, afr, iat, volt, egt)
-                if ble_available:
-                    ble_uart.send(send_str.encode())
-    except Exception:
-        pass
-    time.sleep_ms(10) # Fast loop
-if __name__ == '__main__':
-    try:
-        setup()
-        while True:
-            loop()
-    except (Exception, KeyboardInterrupt) as e:
-        # Cleanup
-        if can_unit:
-            try: can_unit.deinit()
-            except: pass
-        if ble_available:
-            try: 
-                import bluetooth
-                bluetooth.BLE().active(False)
-            except: pass
+        # Clean Logs (Removed verbose Hex/Parts)
+        cmd = data.decode().strip()
+        print("RX:", cmd) 
+        
+        updated = False
+        
+        # --- FIXED LOGIC ORDER (Ver 3.16/3.17) ---
+        if cmd == "GETCONFIG":
+            uart.send_config()
             
+        elif cmd.startswith("CFGBTN="):
+            # Format: CFGBTN=idx,on_val,off_val (Decimal)
+            try:
+                parts = cmd.split('=')[1].split(',')
+                if len(parts) == 3:
+                    idx = int(parts[0])
+                    on_v = int(parts[1])
+                    off_v = int(parts[2])
+                    
+                    if 0 <= idx < 8:
+                        # 1. Priority: Update RAM immediately
+                        # If current state matches ON value, maintain it (don't reset to OFF)
+                        if can_state[idx] == (on_v & 0xFF):
+                             pass 
+                        else:
+                             # Otherwise, apply the OFF value (default/updated)
+                             new_val = off_v & 0xFF
+                             if can_state[idx] != new_val:
+                                 can_state[idx] = new_val
+                                 updated = True
+                          
+                        # 2. Try Save to NVS
+                        if nvs:
+                            try:
+                                nvs.set_i32(f"btn{idx+1}_on", on_v)
+                                nvs.set_i32(f"btn{idx+1}_off", off_v)
+                                nvs.commit()
+                            except: pass
+            except: pass
+        
+        elif '=' in cmd: 
+            parts = cmd.split('=')
+            if parts[0] == "ID":
+                try:
+                    new_id = int(parts[1], 16)
+                    can_tx_id = new_id
+                    if nvs: nvs.set_i32("my_id", new_id); nvs.commit()
+                except: pass
+            elif parts[0] == "KID":
+                try:
+                    new_kid = int(parts[1], 16)
+                    k_meter_id = new_kid
+                    if nvs: nvs.set_i32("k_meter_id", new_kid); nvs.commit()
+                except: pass
+                
+            # --- PATCH APPLIED HERE: Multi-Slot Support ---
+            elif parts[0] == "SET_RX": # Handles "SET_RX=slot,id,idx,mode"
+                try:
+                    rx_parts = parts[1].split(',')
+                    # Check for 4 parameters (New format)
+                    if len(rx_parts) >= 4:
+                        new_rx_slot = int(rx_parts[0])
+                        new_rx_id   = int(rx_parts[1])
+                        new_rx_idx  = int(rx_parts[2])
+                        new_rx_mode = int(rx_parts[3])
+                        
+                        if 0 <= new_rx_slot < 7:
+                            # Update Global Array
+                            rx_monitors[new_rx_slot][0] = new_rx_id
+                            rx_monitors[new_rx_slot][1] = new_rx_idx
+                            rx_monitors[new_rx_slot][2] = new_rx_mode
+                            
+                            # Trigger NVS Save in main loop
+                            rx_config_req = (new_rx_slot, new_rx_id, new_rx_idx, new_rx_mode)
+                            
+                            # JSへ確認応答 (Slot 0の場合のみRXID=で返す、他は無視でもOK)
+                            if new_rx_slot == 0:
+                                try: uart.send(f"RXID={hex(new_rx_id)}".encode())
+                                except: pass
+                            
+                            print(f"Slot {new_rx_slot} Updated: {hex(new_rx_id)}")
+                    
+                    # Backward Compatibility (3 parameters = Slot 0)
+                    elif len(rx_parts) == 3:
+                        new_rx_id   = int(rx_parts[0])
+                        new_rx_idx  = int(rx_parts[1])
+                        new_rx_mode = int(rx_parts[2])
+                        rx_monitors[0][0] = new_rx_id
+                        rx_monitors[0][1] = new_rx_idx
+                        rx_monitors[0][2] = new_rx_mode
+                        rx_config_req = (0, new_rx_id, new_rx_idx, new_rx_mode)
+                        try: uart.send(f"RXID={hex(new_rx_id)}".encode())
+                        except: pass
+                        
+                except Exception as e:
+                    print("SET_RX Err:", e)
+            # --------------------------
+
+            elif len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                # Direct idx=val format
+                idx = int(parts[0]) - 1
+                val = int(parts[1])
+                if 0 <= idx < 8:
+                    if can_state[idx] != val:
+                        can_state[idx] = val & 0xFF
+                        updated = True
+                        
+        elif cmd.isdigit(): 
+            idx = int(cmd) - 1
+            if 0 <= idx < 8:
+                can_state[idx] ^= 1
+                updated = True
+            
+        if updated:
+            can.send(id=can_tx_id, data=can_state)
+            uart.send_state_sync()
+            
+    except Exception as e:
+        print("BLE RX Err:", e)
+
+# ---------------------------------------------
+# Main Setup
+# ---------------------------------------------
+M5.begin()
+init_nvs()
+load_btn_nvs() # Load Initial Values
+
+detected_rate = detect_baudrate()
+
+try:
+    can = CANUnit(id=0, port=(TX_PIN, RX_PIN), mode=CANUnit.NORMAL, baudrate=detected_rate)
+    try:
+        if hasattr(can, 'setfilter'):
+            can.setfilter(0, CANUnit.FILTER_RAW_SINGLE, [0, 0])
+        elif hasattr(can, 'set_filter'):
+            can.set_filter(0, 0, 0)
+    except:
+        pass
+    
+    # --- Startup Broadcast ---
+    print("Startup Broadcast")
+    can.send(id=can_tx_id, data=can_state)
+except Exception as e:
+    print("CAN Init Err:", e)
+
+ble = bluetooth.BLE()
+uart = BLEUART(ble)
+uart.on_rx(on_ble_rx)
+
+# --- K-Meter Init ---
+kmeter_addr = 0x66
+kmeter_found = False
+
+try:
+    i2c0 = I2C(0, scl=Pin(1), sda=Pin(2), freq=100000)
+    time.sleep(0.5) 
+    devs = i2c0.scan()
+    if kmeter_addr in devs:
+        kmeter_found = True
+except Exception as e:
+    pass
+
+M5.Display.clear()
+time.sleep(0.5)
+
+last_display_update = 0
+DISPLAY_INTERVAL = 200
+
+def update_lcd():
+    M5.Display.setTextSize(2)
+    
+    # 1. CAN Status
+    M5.Display.setCursor(0, 0)
+    if can_error:
+        M5.Display.setTextColor(0xF800, 0x0000)
+        M5.Display.print("CAN: ERR  ")
+    else:
+        M5.Display.setTextColor(0x07FF, 0x0000) 
+        M5.Display.print("CAN: OK   ")
+        
+    # 2. BLE Status
+    M5.Display.setCursor(0, 20)
+    if len(uart._connections) > 0:
+        M5.Display.setTextColor(0xFFE0, 0x0000)
+        M5.Display.print("BLE: ON   ")
+    else:
+        M5.Display.setTextColor(0x07FF, 0x0000)
+        M5.Display.print("BLE: --   ")
+        
+    # 3. PAD (Was TX ID)
+    M5.Display.setCursor(0, 40)
+    M5.Display.setTextColor(0xFFFF, 0x0000)
+    # Changed from "TX ID" to "PAD"
+    M5.Display.print(f"PAD:{can_tx_id:X}     ")
+    
+    # 4. KID (Temp ID)
+    M5.Display.setCursor(0, 60)
+    M5.Display.setTextColor(0xFFFF, 0x0000) 
+    M5.Display.print(f"KID:{k_meter_id:X}     ")
+
+    # 5. Temp
+    M5.Display.setCursor(0, 80)
+    M5.Display.setTextColor(0x07E0, 0x0000)
+    if not kmeter_found:
+        if last_temp_disp != "0" and last_temp_disp != "ERR":
+             M5.Display.print(f"Temp:{last_temp_disp}      ")
+        else:
+             M5.Display.print("Temp: NO-I2C    ")
+    else:
+        M5.Display.print(f"Temp:{last_temp_disp}C    ")
+
+    # 6. Baudrate
+    M5.Display.setCursor(0, 100)
+    if detected_rate >= 1000000:
+        M5.Display.setTextColor(0x07FF, 0x0000) 
+        M5.Display.print("1M        ")
+    else:
+        M5.Display.setTextColor(0xFFE0, 0x0000) 
+        M5.Display.print("500k      ")
+
+    # 7. Generic Monitor (Show Slot 0 only for simplicity)
+    M5.Display.setCursor(0, 120)
+    M5.Display.setTextColor(0xFFE0, 0x0000)
+    # Use Slot 0 config for display
+    M5.Display.print(f"RX:{rx_monitors[0][0]:X} i:{rx_monitors[0][1]} m:{rx_monitors[0][2]}   ")
+    M5.Display.setCursor(0, 140)
+    M5.Display.print(f"Val:{last_rx_monitor_val}       ")
+
+last_can_send_time = 0
+CAN_SEND_INTERVAL = 200  
+last_ble_sync_time = 0
+BLE_SYNC_INTERVAL = 1000 
+last_temp_send_time = 100 
+TEMP_SEND_INTERVAL = 200 
+
+while True:
+    M5.update()
+    now = time.ticks_ms()
+    
+    if BtnA.wasPressed():
         try:
-            from utility import print_error_msg
-            print_error_msg(e)
-        except ImportError:
-            print("please update to latest firmware")
+            test_data = bytearray([0xA1, 0xB2, 0xC3, 0xD4, 0xE5, 0xF6, 0x07, 0x08])
+            can.send(id=0x200, data=test_data)
+        except:
+            pass
+
+    # --- Temp/TX Loop ---
+    if time.ticks_diff(now, last_temp_send_time) > TEMP_SEND_INTERVAL:
+        if kmeter_found:
+            try:
+                data = i2c0.readfrom_mem(kmeter_addr, 0x00, 4)
+                val_int = struct.unpack('<i', data)[0] 
+                temp_val = val_int / 100.0
+                t_int = int(temp_val)
+                sign = 1 if temp_val >= 0 else 0
+                abs_val = abs(t_int)
+                sensor_data = bytearray([0x01, sign, (abs_val >> 8) & 0xFF, abs_val & 0xFF, 0,0,0,0])
+                
+                last_temp_disp = str(t_int)
+                
+                try: can.send(id=k_meter_id, data=sensor_data)
+                except: pass
+                
+                try: uart.send(f"TEMP={t_int}".encode())
+                except: pass
+            except: pass
+        last_temp_send_time = now
+
+    if time.ticks_diff(now, last_can_send_time) > CAN_SEND_INTERVAL:
+        try:
+            can.send(id=can_tx_id, data=can_state)
+            can_error = False
+        except:
+            can_error = True
+        last_can_send_time = now
+
+    if time.ticks_diff(now, last_ble_sync_time) > BLE_SYNC_INTERVAL:
+        uart.send_state_sync()
+        uart.send_status(can_error)
+        last_ble_sync_time = now
+
+    # --- Process Deferred RX Config (NVS Save) ---
+    if rx_config_req:
+        try:
+            (req_slot, req_id, req_idx, req_mode) = rx_config_req
+            # Global vars are already updated in on_ble_rx
+            rx_config_req = None # Clear request
+            
+            if nvs:
+                try:
+                    if req_slot == 0:
+                        nvs.set_i32("rx_id", req_id)
+                        nvs.set_i32("rx_idx", req_idx)
+                        nvs.set_i32("rx_m", req_mode)
+                    else:
+                        nvs.set_i32(f"rx{req_slot}_id", req_id)
+                        nvs.set_i32(f"rx{req_slot}_idx", req_idx)
+                        nvs.set_i32(f"rx{req_slot}_m", req_mode)
+                        
+                    nvs.commit()
+                    print(f"NVS Saved (Slot {req_slot})")
+                except: pass
+        except Exception as e:
+            print("Config Apply Err:", e)
+            rx_config_req = None
+
+    # --- RX Loop (Multi-Monitor) ---
+    if can and can.any(FIFO):
+        try:
+            msg = can.recv(FIFO)
+            if msg:
+                can_id, is_ext, rtr, dlc, rx_data = msg
+                last_rx_id = can_id
+                rx_count += 1
+                
+                # --- Check for K-Meter ID Match ---
+                is_kmeter_msg = (can_id == k_meter_id) or (kmeter_found and can_id == 0x200)
+                
+                if is_kmeter_msg and dlc >= 4: 
+                    t_high = rx_data[2]
+                    t_low = rx_data[3]
+                    val = (t_high << 8) | t_low
+                    if rx_data[1] == 0: val = -val
+                    last_temp_disp = str(val)
+                
+                # --- Generic Monitor Logic (Iterate all 7 slots) ---
+                for slot_i in range(7):
+                    cfg_id = rx_monitors[slot_i][0]
+                    cfg_idx = rx_monitors[slot_i][1]
+                    cfg_mode = rx_monitors[slot_i][2]
+                    
+                    if can_id == cfg_id:
+                        try:
+                            val = 0
+                            # Mode 0: 1Byte
+                            if cfg_mode == 0:
+                                if cfg_idx < dlc:
+                                    val = rx_data[cfg_idx]
+                            # Mode 1: 2Byte LE
+                            elif cfg_mode == 1:
+                                if cfg_idx + 1 < dlc:
+                                    val = rx_data[cfg_idx] | (rx_data[cfg_idx+1] << 8)
+                            # Mode 2: 2Byte BE
+                            elif cfg_mode == 2:
+                                if cfg_idx + 1 < dlc:
+                                    val = (rx_data[cfg_idx] << 8) | rx_data[cfg_idx+1]
+                            
+                            # Update display cache only for Slot 0
+                            if slot_i == 0:
+                                last_rx_monitor_val = str(val)
+                            
+                            # Send to BLE
+                            # Slot 0 -> "VAL=..."
+                            # Slot 1-6 -> "VAL2=...", "VAL3=..." etc.
+                            try: 
+                                prefix = "VAL" if slot_i == 0 else f"VAL{slot_i+1}"
+                                uart.send(f"{prefix}={val}".encode())
+                            except: pass
+                            
+                        except Exception as e:
+                            pass
+                        # Note: Do not 'break' here, as multiple slots might monitor the same ID (e.g. Byte 0 and Byte 2)
+      
+        except:
+            pass
+
+    # --- LCD Update ---
+    if time.ticks_diff(now, last_display_update) > DISPLAY_INTERVAL:
+        update_lcd()
+        last_display_update = now
+    
+    time.sleep(0.01)
