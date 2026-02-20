@@ -4,499 +4,191 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (Final)</title>
+    <title>M5Atom CAN Keypad (v2.1 Live Calc)</title>
     <style>
         /* Reset & Base */
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            background-color: #1a1a1a;
-            color: #ffffff;
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%; height: 100dvh;
+            overflow: hidden; background-color: #1a1a1a; color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            touch-action: manipulation;
-        }
-        body {
-            display: flex;
-            flex-direction: column;
+            touch-action: manipulation; display: flex; flex-direction: column;
         }
         /* --- Views --- */
         .view-container {
-            display: none;
-            flex: 1;
-            flex-direction: column;
-            box-sizing: border-box;
-            padding: 10px;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+            display: none; flex: 1; flex-direction: column; box-sizing: border-box;
+            padding: 10px; width: 100%; height: 100%; overflow: hidden;
         }
-        .view-container.active {
-            display: flex;
-        }
+        .view-container.active { display: flex; }
         /* --- Main View (Keypad) --- */
-        #view-main {
-            position: relative;
-        }
+        #view-main { position: relative; }
         .main-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            padding: 0 5px;
-            flex-shrink: 0;
-            height: 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 5px; padding: 0 5px; flex-shrink: 0; height: 40px;
         }
-        .status-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .status-indicator {
-            font-size: 0.9rem;
-            color: #888;
-            font-weight: bold;
-        }
-        .status-indicator.can-ok {
-            color: #28a745;
-        }
-        .status-indicator.can-err {
-            color: #dc3545;
-        }
-        .status-indicator.stalled {
-            color: #ffc107;
-        }
-        .status-indicator.connected {
-            color: #28a745;
-        }
+        .status-group { display: flex; align-items: center; gap: 10px; }
+        .status-indicator { font-size: 0.9rem; color: #888; font-weight: bold; }
+        .status-indicator.can-ok { color: #28a745; }
+        .status-indicator.can-err { color: #dc3545; }
+        .status-indicator.stalled { color: #ffc107; }
+        .status-indicator.connected { color: #28a745; }
         .header-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-            color: #aaa;
-            line-height: 1;
+            background: none; border: none; font-size: 1.5rem; cursor: pointer;
+            padding: 5px; color: #aaa; line-height: 1;
         }
         /* Connect Overlay */
         #connect-overlay {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 40px;
-            left: 0;
-            bottom: 0;
-            background: #1a1a1a;
-            z-index: 10;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 100%; height: 100%; position: absolute; top: 40px; left: 0; bottom: 0;
+            background: #1a1a1a; z-index: 10;
         }
         #start-btn {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 4px solid #007bff;
-            background: rgba(0, 123, 255, 0.1);
-            color: #007bff;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+            width: 200px; height: 200px; border-radius: 50%; border: 4px solid #007bff;
+            background: rgba(0, 123, 255, 0.1); color: #007bff; font-size: 1.5rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 0 20px rgba(0, 123, 255, 0.3); transition: all 0.2s ease;
+            display: flex; justify-content: center; align-items: center; text-align: center;
         }
-        #start-btn:active {
-            transform: scale(0.95);
-            background: rgba(0, 123, 255, 0.3);
-        }
+        #start-btn:active { transform: scale(0.95); background: rgba(0, 123, 255, 0.3); }
         #keypad {
-            display: none;
-            gap: 8px;
-            flex-grow: 1;
-            width: 100%;
-            max-width: 600px;
-            align-self: center;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            display: none; gap: 8px; flex-grow: 1; width: 100%; max-width: 600px; align-self: center;
+            grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr);
         }
-        #keypad.visible {
-            display: grid;
-        }
+        #keypad.visible { display: grid; }
         @media (orientation: landscape) {
-            #keypad {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(2, 1fr);
-            }
-            .main-header {
-                margin-bottom: 2px;
-                height: 30px;
-            }
-            #connect-overlay {
-                top: 30px;
-            }
+            #keypad { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); }
+            .main-header { margin-bottom: 2px; height: 30px; }
+            #connect-overlay { top: 30px; }
         }
         .key-btn {
-            background: #333;
-            border: 3px solid var(--btn-color, #777);
-            border-radius: 12px;
-            color: var(--btn-color, #fff);
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            position: relative;
-            text-align: center;
-            width: 100%;
-            height: 100%;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            touch-action: none;
-            font-size: clamp(1rem, 5vw, 2rem);
+            background: #333; border: 3px solid var(--btn-color, #777); border-radius: 12px;
+            color: var(--btn-color, #fff); font-weight: bold; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); position: relative; text-align: center;
+            width: 100%; height: 100%; user-select: none; -webkit-user-select: none;
+            -webkit-touch-callout: none; touch-action: none; font-size: clamp(1rem, 5vw, 2rem);
             transition: all 0.1s ease;
         }
-        .key-btn:active,
-        .key-btn.pressed {
-            transform: scale(0.98);
-        }
+        .key-btn:active, .key-btn.pressed { transform: scale(0.98); }
         .key-btn.active {
-            background: var(--btn-color, #006000);
-            color: #fff;
+            background: var(--btn-color, #006000); color: #fff;
             box-shadow: 0 0 15px var(--btn-color, rgba(0, 255, 0, 0.4));
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
-        .key-btn.pressing {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
+        .key-btn.pressing { transform: scale(0.95); opacity: 0.8; }
         /* --- Settings View --- */
-        #view-settings {
-            background: #222;
-            overflow-y: auto;
-            align-items: center;
-        }
+        #view-settings { background: #222; overflow-y: auto; align-items: center; }
         .settings-header {
-            display: flex;
-            width: 100%;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #444;
-            flex-shrink: 0;
+            display: flex; width: 100%; align-items: center; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid #444; flex-shrink: 0;
         }
-        .back-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: #fff;
-            cursor: pointer;
-            padding: 10px;
-        }
-        .settings-title {
-            flex-grow: 1;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
+        .back-btn { background: none; border: none; font-size: 1.2rem; color: #fff; cursor: pointer; padding: 10px; }
+        .settings-title { flex-grow: 1; text-align: center; font-size: 1.2rem; font-weight: bold; }
         .settings-group {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-sizing: border-box;
-            padding: 0 5px;
+            width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px;
+            box-sizing: border-box; padding: 0 5px;
         }
-        .control-row {
-            width: 100%;
-        }
+        .control-row { width: 100%; }
         .action-btn {
-            width: 100%;
-            padding: 15px;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
+            width: 100%; padding: 15px; font-size: 1rem; border-radius: 8px; border: none;
+            color: white; cursor: pointer; font-weight: bold; display: flex;
+            justify-content: center; align-items: center; gap: 8px;
         }
-        .btn-blue {
-            background: #007bff;
-        }
-        .btn-gray {
-            background: #555;
-        }
-        .btn-orange {
-            background: #e67e22;
-        }
-        .btn-green {
-            background: #28a745;
-        }
-        .btn-red {
-            background: #dc3545;
-        }
+        .btn-blue { background: #007bff; }
+        .btn-gray { background: #555; }
+        .btn-orange { background: #e67e22; }
+        .btn-green { background: #28a745; }
+        .btn-red { background: #dc3545; }
         .id-input-group {
-            display: flex;
-            align-items: center;
-            background: #333;
-            padding: 5px;
-            border-radius: 8px;
-            gap: 5px;
-            width: 100%;
-            box-sizing: border-box;
-            flex-wrap: nowrap;
+            display: flex; align-items: center; background: #333; padding: 5px;
+            border-radius: 8px; gap: 5px; width: 100%; box-sizing: border-box; flex-wrap: nowrap;
         }
         .id-input-group label {
-            padding-left: 10px;
-            color: #ddd;
-            font-size: 1rem;
-            white-space: nowrap;
-            min-width: 80px;
+            padding-left: 5px; color: #ddd; font-size: 0.85rem; white-space: nowrap; min-width: 35px;
         }
-        #can-id-input,
-        #k-meter-id-input,
-        #temp-alarm-input {
-            flex: 1;
-            background: #222;
-            border: 1px solid #555;
-            color: white;
-            padding: 12px;
-            border-radius: 4px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 1.2rem;
-            min-width: 80px;
+        #can-id-input, #k-meter-id-input, #temp-alarm-input {
+            flex: 1; background: #222; border: 1px solid #555; color: white; padding: 12px;
+            border-radius: 4px; text-align: center; font-family: monospace; font-size: 1.2rem; min-width: 80px;
         }
-        #set-id-btn {
-            padding: 12px 20px;
-            white-space: nowrap;
-            min-width: 80px;
+        input, select {
+             background: #222; border: 1px solid #555; color: white; padding: 8px;
+             border-radius: 4px; text-align: center; font-family: monospace; font-size: 1rem;
         }
+        #set-id-btn { padding: 12px 20px; white-space: nowrap; min-width: 80px; }
         /* Config List */
         .config-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #2a2a2a;
-            padding: 10px;
-            border-radius: 8px;
+            display: flex; flex-direction: column; gap: 10px; background: #2a2a2a;
+            padding: 10px; border-radius: 8px;
         }
         .config-list .config-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #333;
-            padding: 8px 10px;
-            border-radius: 6px;
-            gap: 5px;
-            flex-wrap: wrap;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #333; padding: 8px 10px; border-radius: 6px; gap: 5px; flex-wrap: wrap;
         }
         .config-name-input {
-            flex: 1;
-            background: #222;
-            border: 1px solid #555;
-            color: white;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 16px;
-            min-width: 60px;
+            flex: 1; background: #222; border: 1px solid #555; color: white;
+            padding: 8px; border-radius: 4px; font-size: 16px; min-width: 60px;
         }
         /* Mini Segmented Control */
         .mini-switch {
-            display: flex;
-            background: #222;
-            border-radius: 4px;
-            padding: 2px;
-            gap: 4px;
-            flex-shrink: 0;
+            display: flex; background: #222; border-radius: 4px; padding: 2px; gap: 4px; flex-shrink: 0;
         }
         .mini-opt {
-            border: none;
-            background: none;
-            color: #666;
-            font-size: 0.85rem;
-            padding: 6px 10px;
-            border-radius: 3px;
-            cursor: pointer;
+            border: none; background: none; color: #666; font-size: 0.85rem;
+            padding: 6px 10px; border-radius: 3px; cursor: pointer;
         }
-        .mini-opt.selected {
-            background: #555;
-            color: #fff;
-            font-weight: bold;
-        }
+        .mini-opt.selected { background: #555; color: #fff; font-weight: bold; }
         #log {
-            margin-top: 20px;
-            width: 100%;
-            height: 100px;
-            min-height: 100px;
-            overflow-y: auto;
-            background: #000;
-            color: #0f0;
-            font-family: monospace;
-            font-size: 0.7rem;
-            padding: 5px;
-            border: 1px solid #444;
-            box-sizing: border-box;
+            margin-top: 20px; width: 100%; height: 100px; min-height: 100px; overflow-y: auto;
+            background: #000; color: #0f0; font-family: monospace; font-size: 0.7rem;
+            padding: 5px; border: 1px solid #444; box-sizing: border-box;
         }
         #sync-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 5;
-            justify-content: center;
-            align-items: center;
-            color: #00ff00;
-            font-weight: bold;
-            font-size: 1.2rem;
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 5; justify-content: center;
+            align-items: center; color: #00ff00; font-weight: bold; font-size: 1.2rem;
         }
+        /* Live Preview Box Style (NEW) */
+        .live-preview-box {
+            background: #111; border: 1px solid #444; border-radius: 6px; padding: 10px;
+            margin-top: 10px; margin-bottom: 10px; text-align: center;
+        }
+        .live-val { color: #00ff00; font-family: monospace; font-size: 1.5rem; font-weight: bold; }
+        .live-raw { color: #666; font-size: 0.8rem; margin-top: 2px; }
+        
         /* Voice Animations */
-        @keyframes pulse-mic {
-            0% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(1.1);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        @keyframes blink-red {
-            0% {
-                color: #ff0000;
-                text-shadow: 0 0 10px #ff0000;
-            }
-            50% {
-                color: #880000;
-                text-shadow: none;
-            }
-            100% {
-                color: #ff0000;
-                text-shadow: 0 0 10px #ff0000;
-            }
-        }
-        .temp-warning {
-            animation: blink-red 1s infinite;
-            font-weight: bold;
-            font-size: 1.4rem !important;
-        }
+        @keyframes pulse-mic { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes blink-red { 0% { color: #ff0000; text-shadow: 0 0 10px #ff0000; } 50% { color: #880000; text-shadow: none; } 100% { color: #ff0000; text-shadow: 0 0 10px #ff0000; } }
+        .temp-warning { animation: blink-red 1s infinite; font-weight: bold; font-size: 1.4rem !important; }
         /* --- Meter View --- */
-        #view-meter {
-            background: #000;
-            flex-direction: column;
-            padding-top: 50px;
-            box-sizing: border-box;
-        }
+        #view-meter { background: #000; flex-direction: column; padding-top: 50px; box-sizing: border-box; }
         #meter-grid {
-            display: grid;
-            gap: 8px;
-            width: 100%;
-            height: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            /* Default Portrait: 2 columns, 4 rows */
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            display: grid; gap: 8px; width: 100%; height: 100%; padding: 10px; box-sizing: border-box;
+            grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(4, 1fr);
         }
-        /* Landscape Mode */
-        @media (orientation: landscape) {
-            #meter-grid {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(2, 1fr);
-            }
-        }
+        @media (orientation: landscape) { #meter-grid { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); } }
         .meter-cell {
-            background: #111;
-            border: 2px solid #333;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
+            background: #111; border: 2px solid #333; border-radius: 12px; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            position: relative; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); overflow: hidden;
         }
         .meter-label {
-            position: absolute;
-            top: 5px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: #888;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            font-weight: bold;
+            position: absolute; top: 5px; left: 0; width: 100%; text-align: center;
+            color: #888; font-size: 0.8rem; text-transform: uppercase; font-weight: bold;
         }
         .meter-value {
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: clamp(1.5rem, 6vw, 2.5rem);
-            color: #fff;
+            font-family: 'Courier New', Courier, monospace; font-weight: bold;
+            font-size: clamp(1.5rem, 6vw, 2.5rem); color: #fff;
             text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
         }
-        .meter-unit {
-            position: absolute;
-            bottom: 5px;
-            right: 10px;
-            color: #666;
-            font-size: 0.7rem;
-        }
+        .meter-unit { position: absolute; bottom: 5px; right: 10px; color: #666; font-size: 0.7rem; }
         /* Specific Colors */
-        .val-green {
-            color: #00FF00;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
-        }
-        .val-red {
-            color: #FF0000;
-            text-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
-        }
-        .val-yellow {
-            color: #FFD700;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
-        }
-        .val-cyan {
-            color: #00FFFF;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-        }
-        .val-gray {
-            color: #444;
-        }
+        .val-green { color: #00FF00; text-shadow: 0 0 10px rgba(0, 255, 0, 0.4); }
+        .val-red { color: #FF0000; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
+        .val-yellow { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+        .val-cyan { color: #00FFFF; text-shadow: 0 0 10px rgba(0, 255, 255, 0.4); }
+        .val-gray { color: #444; }
         .meter-header-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 1.5rem;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 5px 15px;
-            color: white;
-            cursor: pointer;
-            z-index: 20;
+            position: absolute; top: 10px; left: 10px; font-size: 1.5rem; background: #333;
+            border: 1px solid #555; border-radius: 8px; padding: 5px 15px; color: white;
+            cursor: pointer; z-index: 20;
         }
     </style>
 </head>
@@ -504,58 +196,41 @@
     <div id="view-meter" class="view-container">
         <button class="meter-header-btn" onclick="showMain()">↩️ Back</button>
         <div id="meter-grid">
-            <!-- Cell 1: Exhaust Temp -->
             <div class="meter-cell">
                 <div class="meter-label">Exhaust Temp</div>
                 <div id="meter-val-1" class="meter-value val-cyan">--</div>
                 <div class="meter-unit">°C</div>
             </div>
-            <!-- Cell 2: Generic Monitor -->
             <div class="meter-cell">
                 <div class="meter-label">RX Monitor</div>
                 <div id="meter-val-2" class="meter-value val-yellow">---</div>
-                <div class="meter-unit">RAW</div>
+                <div id="meter-unit-2" class="meter-unit">RAW</div>
             </div>
-            <!-- Empty Cells 3-8 -->
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
-            <div class="meter-cell">
-                <div class="meter-value val-gray">--</div>
-            </div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
         </div>
     </div>
     <div id="view-main" class="view-container active">
         <div class="main-header">
             <div class="status-group">
                 <div id="status-display" class="status-indicator">🔴 Disconnected</div>
-                <div id="can-status-display" class="status-indicator"
-                    style="display:none; font-size:0.8rem; border-left:1px solid #444; padding-left:10px;">CAN: --</div>
+                <div id="can-status-display" class="status-indicator" style="display:none; font-size:0.8rem; border-left:1px solid #444; padding-left:10px;">CAN: --</div>
             </div>
             <div style="flex:1;"></div>
             <div style="display:flex; gap:15px; align-items:center;">
                 <button id="meter-view-btn" class="header-btn" onclick="showMeter()">📟</button>
-                <button id="main-sound-btn" class="header-btn" onclick="toggleSoundMain()"
-                    style="font-size:1.2rem;">🔊</button>
+                <button id="main-sound-btn" class="header-btn" onclick="toggleSoundMain()" style="font-size:1.2rem;">🔊</button>
                 <button class="header-btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
                 <button id="settings-btn" class="header-btn" onclick="showSettings()">⚙️</button>
             </div>
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 6.0.0 (Meter View)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 2.1 (Live Calc)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -589,17 +264,14 @@
                     <label style="min-width: 60px; color: #e67e22;">Alarm:°C</label>
                     <input type="number" id="temp-alarm-input" value="950" placeholder="e.g. 900">
                 </div>
-                <div style="font-size:0.7rem; color:#888; margin-top:2px; text-align:right;">Voice warning threshold
-                </div>
+                <div style="font-size:0.7rem; color:#888; margin-top:2px; text-align:right;">Voice warning threshold</div>
             </div>
             <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Biometric Registration</div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                     <div id="bio-status" style="color:#888; font-size:0.8rem;">Checking...</div>
-                    <button id="btn-bio-reg" class="action-btn btn-blue" onclick="registerBiometric()"
-                        style="padding:10px; font-size:0.9rem; width:auto;">Register</button>
-                    <button id="btn-bio-clear" class="action-btn btn-red" onclick="clearBiometric()"
-                        style="padding:10px; font-size:0.9rem; width:auto; display:none;">Clear</button>
+                    <button id="btn-bio-reg" class="action-btn btn-blue" onclick="registerBiometric()" style="padding:10px; font-size:0.9rem; width:auto;">Register</button>
+                    <button id="btn-bio-clear" class="action-btn btn-red" onclick="clearBiometric()" style="padding:10px; font-size:0.9rem; width:auto; display:none;">Clear</button>
                 </div>
             </div>
             <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
@@ -622,253 +294,242 @@
             <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Mapping Presets</div>
                 <div style="display:flex; gap:10px;">
-                    <button class="action-btn btn-gray" onclick="applyPreset('normal')"
-                        style="padding:10px; font-size:0.8rem;">Normal (1=0..8=7)</button>
-                    <button class="action-btn btn-gray" onclick="applyPreset('reverse')"
-                        style="padding:10px; font-size:0.8rem;">Reverse (1=7..8=0)</button>
+                    <button class="action-btn btn-gray" onclick="applyPreset('normal')" style="padding:10px; font-size:0.8rem;">Normal (1=0..8=7)</button>
+                    <button class="action-btn btn-gray" onclick="applyPreset('reverse')" style="padding:10px; font-size:0.8rem;">Reverse (1=7..8=0)</button>
                 </div>
             </div>
             <div class="control-row" style="margin-top: 10px;">
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px; margin-left: 5px;">Button Configuration
-                </div>
-                <div id="config-list-container" class="config-list">
-                </div>
+                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px; margin-left: 5px;">Button Configuration</div>
+                <div id="config-list-container" class="config-list"></div>
             </div>
-            <!-- Generic Monitor Config (RX Monitor) - FIXED v2 -->
+            
             <div class="control-row" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 8px;">📡 RX Monitor Config</div>
-                <div class="id-input-group" style="margin-bottom:6px; border:1px solid #e67e22;">
-                    <label style="min-width:60px; color:#e67e22;">RX:0x</label>
-                    <input type="text" id="rx-monitor-id-input" value="90" maxlength="3"
-                        style="flex:1; background:#222; border:1px solid #555; color:white;
-                               padding:12px; border-radius:4px; text-align:center;
-                               font-family:monospace; font-size:1.2rem; min-width:70px;">
-                </div>
                 <div style="display:flex; gap:6px; margin-bottom:6px;">
                     <div class="id-input-group" style="flex:1;">
-                        <label style="min-width:50px; font-size:0.85rem;">Byte#</label>
-                        <input type="number" id="rx-byte-index-input" value="2" min="0" max="7"
-                            style="flex:1; background:#222; border:1px solid #555; color:white;
-                                   padding:10px; border-radius:4px; text-align:center;
-                                   font-family:monospace; font-size:1rem; min-width:50px;">
+                        <label style="min-width:35px; font-size:0.85rem; color:#e67e22;">ID:0x</label>
+                        <input type="text" id="rx-monitor-id-input" value="90" maxlength="3" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; text-align:center; font-family:monospace; font-size:1rem;">
                     </div>
-                    <div class="id-input-group" style="flex:1.5;">
-                        <label style="min-width:45px; font-size:0.85rem;">Mode</label>
-                        <select id="rx-mode-select"
-                            style="flex:1; background:#222; border:1px solid #555; color:white;
-                                   padding:10px; border-radius:4px; font-size:0.9rem;">
-                            <option value="0">1Byte</option>
-                            <option value="1" selected>2B LE</option>
-                            <option value="2">2B BE</option>
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:30px; font-size:0.85rem;">Idx</label>
+                        <input type="number" id="rx-byte-index-input" value="2" min="0" max="7" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; text-align:center; font-family:monospace; font-size:1rem;">
+                    </div>
+                    <div class="id-input-group" style="flex:1.2;">
+                        <select id="rx-mode-select" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; font-size:0.85rem;">
+                            <option value="0">1B</option>
+                            <option value="1" selected>2B-LE</option>
+                            <option value="2">2B-BE</option>
                         </select>
                     </div>
                 </div>
-                <button class="action-btn btn-orange" onclick="setRxConfig()">SET RX Monitor</button>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:30px; font-size:0.85rem;">Mul</label>
+                        <input type="number" id="rx-mul-input" value="1.0" step="0.01" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; text-align:center; font-family:monospace; font-size:1rem;">
+                    </div>
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:30px; font-size:0.85rem;">Add</label>
+                        <input type="number" id="rx-add-input" value="0" step="1" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; text-align:center; font-family:monospace; font-size:1rem;">
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:30px; font-size:0.85rem;">Dec</label>
+                        <select id="rx-dec-select" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; font-size:0.9rem;">
+                            <option value="0">0</option>
+                            <option value="1">0.0</option>
+                            <option value="2">0.00</option>
+                        </select>
+                    </div>
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:35px; font-size:0.85rem;">Unit</label>
+                        <input type="text" id="rx-unit-input" placeholder="-" style="flex:1; background:#222; border:1px solid #555; color:white; padding:10px; border-radius:4px; text-align:center; font-size:0.9rem;">
+                    </div>
+                </div>
+                <div class="live-preview-box">
+                    <div style="font-size:0.8rem; color:#aaa;">Live Result (Preview)</div>
+                    <div id="rx-live-val" class="live-val">---</div>
+                    <div id="rx-live-raw" class="live-raw">Raw: ---</div>
+                </div>
+                <button class="action-btn btn-orange" onclick="setRxConfig()">SET & SAVE RX Monitor</button>
                 <div id="rx-config-status" style="font-size:0.75rem; color:#888; margin-top:4px; text-align:right;"></div>
             </div>
+            
             <div class="control-row" style="margin-top: 10px;">
                 <button class="action-btn btn-gray" onclick="toggleFullscreen()">⛶ Toggle Fullscreen</button>
             </div>
             <div class="control-row" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px; text-align: center;">Config Backup</div>
                 <div style="display:flex; gap:10px;">
-                    <button class="action-btn btn-blue" onclick="exportConfig()" style="font-size:0.9rem;">⬇ Save
-                        Config</button>
-                    <button class="action-btn btn-orange" onclick="importConfig()" style="font-size:0.9rem;">⬆ Load
-                        Config</button>
+                    <button class="action-btn btn-blue" onclick="exportConfig()" style="font-size:0.9rem;">⬇ Save Config</button>
+                    <button class="action-btn btn-orange" onclick="importConfig()" style="font-size:0.9rem;">⬆ Load Config</button>
                 </div>
-                <input type="file" id="import-file" style="display:none" accept=".json"
-                    onchange="handleFileSelect(this)">
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">
-                Atom S3 Keypad & Dash Meter Ver 6.3<br>
-                M5Atom S3 CAN
-            </div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 2.1<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
-    <div id="icon-picker-overlay"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:20; justify-content:center; align-items:center;">
-        <div
-            style="background:#222; padding:20px; border-radius:10px; border:1px solid #555; width:80%; max-width:300px;">
+    <div id="icon-picker-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:20; justify-content:center; align-items:center;">
+        <div style="background:#222; padding:20px; border-radius:10px; border:1px solid #555; width:80%; max-width:300px;">
             <div style="text-align:center; margin-bottom:15px; font-weight:bold;">Select Icon</div>
-            <div id="icon-picker-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;">
-            </div>
+            <div id="icon-picker-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;"></div>
             <div style="margin-top:15px; text-align:center;">
-                <div style="margin-top:15px; text-align:center;">
-                    <button class="action-btn btn-gray" onclick="closeIconPicker()">Cancel</button>
-                </div>
+                <button class="action-btn btn-gray" onclick="closeIconPicker()">Cancel</button>
             </div>
         </div>
     </div>
-    <div class="control-group">
-        <!-- Manange Config Header Removed -->
-        <script>
-            const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-            const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-            const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-            /* --- ICONS (Ver 3.3) --- */
-            const ICONS = {
-                none: null,
-                power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>',
-                light: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-8.5h-2v3h2V2zm4.25 4.42l1.79 1.79 1.41-1.41-1.79-1.79-1.41 1.41zm5.75 4.08h-3v2h3v-2zm-12 11V6.5h14V17c0 2.21-1.79 4-4 4h-6c-2.21 0-4-1.79-4-4z"/></svg>',
-                wiper: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M5 12l2-6 8 0 2 6"/><path d="M14 6l-2-3"/></svg>', // Simplified
-                horn: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h2l5 5v-14l-5 5H3zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
-                lock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>',
-                music: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>',
-                fan: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 11c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 2c0-3.31-2.69-6-6-6s-6 2.69-6 6c0 2.22 1.21 4.15 3 5.19V14.2c-1.21-.63-2-2.16-2-3.2 0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.79 2.57-2 3.2v3.99c1.79-1.04 3-2.97 3-5.19z"/></svg>',
-                hazard: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
-                setting: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>',
-                engine: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>',
-                rain: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 9c0-.8.7-1.5 1.5-1.5S7.5 8.2 7.5 9s-.7 1.5-1.5 1.5S4.5 9.8 4.5 9zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 6c0-.8.7-1.5 1.5-1.5S7.5 14.2 7.5 15s-.7 1.5-1.5 1.5S4.5 15.8 4.5 15zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5z"/></svg>',
-                menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
-                ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>',
-                fuel: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14h-2V5c0-1.1-.9-2-2-2h-6c-1.1 0-2 .9-2 2v14h10v-5zM9 5h6v9H9V5zm-2 9H5V5h2v9zm13 8h-2v-2h2v2zm0-4h-2v-2h2v2z"/></svg>',
-                temp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-2z"/></svg>',
-                winch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v7"/><path d="M12 15v7"/><path d="M15 12h7"/><path d="M2 12h7"/></svg>'
+    <script>
+        const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+        const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+        /* --- ICONS (Ver 3.3) --- */
+        const ICONS = {
+            none: null,
+            power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>',
+            light: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79 1.42-1.41zM4 10.5H1v2h3v-2zm9-8.5h-2v3h2V2zm4.25 4.42l1.79 1.79 1.41-1.41-1.79-1.79-1.41 1.41zm5.75 4.08h-3v2h3v-2zm-12 11V6.5h14V17c0 2.21-1.79 4-4 4h-6c-2.21 0-4-1.79-4-4z"/></svg>',
+            wiper: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M5 12l2-6 8 0 2 6"/><path d="M14 6l-2-3"/></svg>',
+            horn: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h2l5 5v-14l-5 5H3zm13.5 2c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>',
+            lock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>',
+            music: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>',
+            fan: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 11c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 2c0-3.31-2.69-6-6-6s-6 2.69-6 6c0 2.22 1.21 4.15 3 5.19V14.2c-1.21-.63-2-2.16-2-3.2 0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.79 2.57-2 3.2v3.99c1.79-1.04 3-2.97 3-5.19z"/></svg>',
+            hazard: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+            setting: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>',
+            engine: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>',
+            rain: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 9c0-.8.7-1.5 1.5-1.5S7.5 8.2 7.5 9s-.7 1.5-1.5 1.5S4.5 9.8 4.5 9zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 6c0-.8.7-1.5 1.5-1.5S7.5 14.2 7.5 15s-.7 1.5-1.5 1.5S4.5 15.8 4.5 15zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5z"/></svg>',
+            menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+            ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>',
+            fuel: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 14h-2V5c0-1.1-.9-2-2-2h-6c-1.1 0-2 .9-2 2v14h10v-5zM9 5h6v9H9V5zm-2 9H5V5h2v9zm13 8h-2v-2h2v2zm0-4h-2v-2h2v2z"/></svg>',
+            temp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-2z"/></svg>',
+            winch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v7"/><path d="M12 15v7"/><path d="M15 12h7"/><path d="M2 12h7"/></svg>'
+        };
+        let device, rxChar, txChar, gattServer;
+        // Data Storage
+        let btnLabels = JSON.parse(localStorage.getItem("btnLabels")) || Array.from({ length: 8 }, (_, i) => `BTN ${i + 1}`);
+        let btnOnVals = JSON.parse(localStorage.getItem("btnOnVals")) || Array(8).fill('01');
+        let btnOffVals = JSON.parse(localStorage.getItem("btnOffVals")) || Array(8).fill('00');
+        let btnIcons = JSON.parse(localStorage.getItem("btnIcons")) || Array(8).fill('none');
+        let btnModes = JSON.parse(localStorage.getItem("btnModes")) || Array(8).fill('toggle');
+        let btnEndian = JSON.parse(localStorage.getItem("btnEndian")) || Array(8).fill('big');
+        let btnAuth = JSON.parse(localStorage.getItem("btnAuth")) || Array(8).fill(false);
+        let btnOnDelays = JSON.parse(localStorage.getItem("btnOnDelays")) || Array(8).fill(0);
+        let btnOffDelays = JSON.parse(localStorage.getItem("btnOffDelays")) || Array(8).fill(0);
+        let authCredentialId = localStorage.getItem("authCredentialId");
+        let cfgVibe = JSON.parse(localStorage.getItem("cfgVibe")) !== false;
+        let cfgSound = JSON.parse(localStorage.getItem("cfgSound")) !== false;
+        let tempWarnVal = parseInt(localStorage.getItem("tempWarnVal")) || 950;
+        let lastTempWarnTime = 0;
+        
+        // RX Monitor Settings (Updated for Calculation)
+        let rxMonitorId = localStorage.getItem("rxMonitorId") || "90";
+        let rxByteIndex = localStorage.getItem("rxByteIndex") || "2";
+        let rxMode = localStorage.getItem("rxMode") || "1";
+        // ★ NEW: Calc Variables
+        let rxMul = parseFloat(localStorage.getItem("rxMul")) || 1.0;
+        let rxAdd = parseFloat(localStorage.getItem("rxAdd")) || 0;
+        let rxDec = parseInt(localStorage.getItem("rxDec")) || 0;
+        let rxUnit = localStorage.getItem("rxUnit") || "";
+
+        let audioCtx = null;
+        let btnColors = JSON.parse(localStorage.getItem("btnColors")) || Array(8).fill('#00FF00');
+        let btnStates = Array(8).fill(false);
+        let isConnected = false;
+        let lastPulseTimes = Array(8).fill(0);
+        let holdTimers = Array(8).fill(null);
+        let watchdogTimer = null;
+        const WATCHDOG_TIMEOUT = 3500;
+        let canIdVal = localStorage.getItem("canIdVal") || "100";
+        let kMeterIdVal = localStorage.getItem("kMeterIdVal") || "200";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const cInput = document.getElementById("can-id-input"); if (cInput) cInput.value = canIdVal;
+            const kInput = document.getElementById("k-meter-id-input"); if (kInput) kInput.value = kMeterIdVal;
+            const tInput = document.getElementById("temp-alarm-input");
+            if (tInput) {
+                tInput.value = tempWarnVal;
+                tInput.addEventListener('change', (e) => {
+                    let val = parseInt(e.target.value);
+                    if (isNaN(val)) val = 950;
+                    tempWarnVal = val;
+                    localStorage.setItem("tempWarnVal", tempWarnVal);
+                });
+            }
+            
+            // Restore RX Config Values
+            const rId = document.getElementById("rx-monitor-id-input"); if(rId) rId.value = rxMonitorId;
+            const rIdx = document.getElementById("rx-byte-index-input"); if(rIdx) rIdx.value = rxByteIndex;
+            const rMode = document.getElementById("rx-mode-select"); if(rMode) rMode.value = rxMode;
+            
+            // Restore Calc Values
+            const rMul = document.getElementById("rx-mul-input"); if(rMul) rMul.value = rxMul;
+            const rAdd = document.getElementById("rx-add-input"); if(rAdd) rAdd.value = rxAdd;
+            const rDec = document.getElementById("rx-dec-select"); if(rDec) rDec.value = rxDec;
+            const rUnit = document.getElementById("rx-unit-input"); if(rUnit) rUnit.value = rxUnit;
+
+            // Live Preview Listeners
+            const updateGlobals = () => {
+                rxMul = parseFloat(document.getElementById("rx-mul-input").value) || 1.0;
+                rxAdd = parseFloat(document.getElementById("rx-add-input").value) || 0;
+                rxDec = parseInt(document.getElementById("rx-dec-select").value) || 0;
+                rxUnit = document.getElementById("rx-unit-input").value || "";
             };
-            let device, rxChar, txChar, gattServer;
-            // Data Storage
-            let btnLabels = JSON.parse(localStorage.getItem("btnLabels")) ||
-                Array.from({ length: 8 }, (_, i) => `BTN ${i + 1}`);
-            let btnOnVals = JSON.parse(localStorage.getItem("btnOnVals")) ||
-                Array(8).fill('01'); // Default ON = 0x01
-            let btnOffVals = JSON.parse(localStorage.getItem("btnOffVals")) ||
-                Array(8).fill('00'); // Default OFF = 0x00
-            let btnIcons = JSON.parse(localStorage.getItem("btnIcons")) ||
-                Array(8).fill('none'); // Default no icon
-            let btnModes = JSON.parse(localStorage.getItem("btnModes")) ||
-                Array(8).fill('toggle');
-            // Ver 3.0: Per-Button Endianness
-            let btnEndian = JSON.parse(localStorage.getItem("btnEndian")) ||
-                Array(8).fill('big');
-            // Ver 4.0: Biometric Auth
-            let btnAuth = JSON.parse(localStorage.getItem("btnAuth")) ||
-                Array(8).fill(false);
-            // Ver 4.4: Button Delays
-            let btnOnDelays = JSON.parse(localStorage.getItem("btnOnDelays")) || Array(8).fill(0);
-            let btnOffDelays = JSON.parse(localStorage.getItem("btnOffDelays")) || Array(8).fill(0);
-            // Ver 4.1: Auth Credential ID (Local Registration)
-            let authCredentialId = localStorage.getItem("authCredentialId");
-            // Ver 3.1: Feedback
-            let cfgVibe = JSON.parse(localStorage.getItem("cfgVibe")) !== false; // Default true
-            let cfgSound = JSON.parse(localStorage.getItem("cfgSound")) !== false; // Default true (Changed from false)
-            // ★ NEW: Temp Alarm Threshold (Stored)
-            let tempWarnVal = parseInt(localStorage.getItem("tempWarnVal")) || 950;
-            let lastTempWarnTime = 0; // Debounce logic
-            // ★ NEW: Monitor Config (Stored)
-            let rxMonitorId = localStorage.getItem("rxMonitorId") || "90";
-            let rxByteIndex = localStorage.getItem("rxByteIndex") || "2";
-            let rxMode = localStorage.getItem("rxMode") || "1";
-            // Audio
-            let audioCtx = null;
-            let btnColors = JSON.parse(localStorage.getItem("btnColors")) ||
-                Array(8).fill('#00FF00');
-            let btnStates = Array(8).fill(false);
-            let isConnected = false;
-            // --- Pulse Logic Variables ---
-            let lastPulseTimes = Array(8).fill(0);
-            // Ver 4.5: Long Press Timers
-            let holdTimers = Array(8).fill(null);
-            // --- Watchdog ---
-            let watchdogTimer = null;
-            const WATCHDOG_TIMEOUT = 3500; // 3.5s (Device sends every 1s)
-            // --- CAN ID Logic ---
-            let canIdVal = localStorage.getItem("canIdVal") || "100";
-            let kMeterIdVal = localStorage.getItem("kMeterIdVal") || "200";
-            // Set Init Values to Inputs
-            document.addEventListener("DOMContentLoaded", () => {
-                const cInput = document.getElementById("can-id-input");
-                if (cInput) cInput.value = canIdVal;
-                const kInput = document.getElementById("k-meter-id-input");
-                if (kInput) kInput.value = kMeterIdVal;
-                // ★ NEW: Init Temp Alarm Input
-                const tInput = document.getElementById("temp-alarm-input");
-                if (tInput) {
-                    tInput.value = tempWarnVal;
-                    tInput.addEventListener('change', (e) => {
-                        let val = parseInt(e.target.value);
-                        if (isNaN(val)) val = 950;
-                        tempWarnVal = val;
-                        localStorage.setItem("tempWarnVal", tempWarnVal);
-                    });
-                }
-                localStorage.setItem("tempWarnVal", tempWarnVal);
-                const rId = document.getElementById("rx-monitor-id-input");
-                if (rId) rId.value = rxMonitorId;
-                const rIdx = document.getElementById("rx-byte-index-input");
-                if (rIdx) rIdx.value = rxByteIndex;
-                const rMode = document.getElementById("rx-mode-select");
-                if (rMode) rMode.value = rxMode;
-            });
-            /* --- Config UI Generation --- */
-            function renderConfigList() {
-                // Update Bio Status UI
-                const st = document.getElementById("bio-status");
-                const btnReg = document.getElementById("btn-bio-reg");
-                const btnClear = document.getElementById("btn-bio-clear");
-                if (authCredentialId) {
-                    st.textContent = "✅ Registered";
-                    st.style.color = "#28a745";
-                    btnReg.style.display = "none";
-                    btnClear.style.display = "block";
-                } else {
-                    st.textContent = "⚠️ Not Registered";
-                    st.style.color = "#ffc107";
-                    btnReg.style.display = "block";
-                    btnClear.style.display = "none";
-                }
-                const container = document.getElementById('config-list-container');
-                container.innerHTML = '';
-                btnLabels.forEach((label, i) => {
-                    const row = document.createElement('div');
-                    row.className = 'config-row';
-                    const isMom = (btnModes[i] === 'momentary');
-                    const color = btnColors[i];
-                    const endian = btnEndian[i];
-                    const icon = btnIcons[i];
-                    const isAuth = btnAuth[i]; // Ver 4.0
-                    row.innerHTML = `
+            if(rMul) rMul.addEventListener("input", updateGlobals);
+            if(rAdd) rAdd.addEventListener("input", updateGlobals);
+            if(rDec) rDec.addEventListener("change", updateGlobals);
+            if(rUnit) rUnit.addEventListener("input", updateGlobals);
+        });
+
+        /* --- Config UI Generation --- */
+        function renderConfigList() {
+            const st = document.getElementById("bio-status");
+            const btnReg = document.getElementById("btn-bio-reg");
+            const btnClear = document.getElementById("btn-bio-clear");
+            if (authCredentialId) {
+                st.textContent = "✅ Registered"; st.style.color = "#28a745";
+                btnReg.style.display = "none"; btnClear.style.display = "block";
+            } else {
+                st.textContent = "⚠️ Not Registered"; st.style.color = "#ffc107";
+                btnReg.style.display = "block"; btnClear.style.display = "none";
+            }
+            const container = document.getElementById('config-list-container');
+            container.innerHTML = '';
+            btnLabels.forEach((label, i) => {
+                const row = document.createElement('div');
+                row.className = 'config-row';
+                const isMom = (btnModes[i] === 'momentary');
+                const color = btnColors[i];
+                const endian = btnEndian[i];
+                const icon = btnIcons[i];
+                const isAuth = btnAuth[i];
+                row.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
                   <button class="mini-opt" style="width:30px; height:30px; border:1px solid #555; padding:2px;" onclick="openIconPicker(${i})">
                     ${(icon !== 'none' && ICONS[icon]) ? ICONS[icon] : '<span style="font-size:0.8rem;">Icon</span>'}
                   </button>
                   <input type="color" value="${color}" onchange="updateBtnColor(${i}, this.value)" style="width:30px; height:20px; border:none; background:none; cursor:pointer;">
                 </div>
-                 
-                <input type="text" class="config-name-input" value="${label}" 
-                    maxlength="8" onchange="updateBtnLabel(${i}, this.value)">
+                <input type="text" class="config-name-input" value="${label}" maxlength="8" onchange="updateBtnLabel(${i}, this.value)">
                 <div style="display:flex; flex-direction:column; gap:2px;">
                   <div style="display:flex; gap:2px; align-items:center;">
                     <span style="font-size:0.7rem; color:#aaa;">ON:0x</span>
-                    <input type="text" value="${btnOnVals[i]}" maxlength="2" 
-                      onchange="updateBtnVal(${i}, 'on', this.value)"
-                      style="width:40px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:16px;">
+                    <input type="text" value="${btnOnVals[i]}" maxlength="2" onchange="updateBtnVal(${i}, 'on', this.value)" style="width:40px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:16px;">
                   </div>
                    <div style="display:flex; gap:2px; align-items:center;">
                     <span style="font-size:0.7rem; color:#aaa;">OFF:0x</span>
-                    <input type="text" value="${btnOffVals[i]}" maxlength="2" 
-                      onchange="updateBtnVal(${i}, 'off', this.value)"
-                      style="width:40px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:16px;">
+                    <input type="text" value="${btnOffVals[i]}" maxlength="2" onchange="updateBtnVal(${i}, 'off', this.value)" style="width:40px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:16px;">
                     </div>
                  </div>
                  <button class="action-btn btn-orange" style="padding: 5px 10px; font-size: 0.8rem; width: auto;" onclick="saveBtnConfig(${i})">SET</button>
-                 
                  <div style="display:flex; flex-direction:column; gap:2px; margin-left:5px;">
                    <div style="display:flex; gap:2px; align-items:center;">
                      <span style="font-size:0.7rem; color:#aaa;">OnDly</span>
-                     <input type="number" value="${btnOnDelays[i]}" step="0.1" min="0" 
-                       onchange="updateBtnDelay(${i}, 'on', this.value)"
-                       style="width:50px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:14px;">
+                     <input type="number" value="${btnOnDelays[i]}" step="0.1" min="0" onchange="updateBtnDelay(${i}, 'on', this.value)" style="width:50px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:14px;">
                    </div>
                    <div style="display:flex; gap:2px; align-items:center;">
                      <span style="font-size:0.7rem; color:#aaa;">OffDly</span>
-                     <input type="number" value="${btnOffDelays[i]}" step="0.1" min="0" 
-                       onchange="updateBtnDelay(${i}, 'off', this.value)"
-                       style="width:50px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:14px;">
+                     <input type="number" value="${btnOffDelays[i]}" step="0.1" min="0" onchange="updateBtnDelay(${i}, 'off', this.value)" style="width:50px; background:#222; border:1px solid #555; color:white; font-family:monospace; text-align:center; padding:4px; font-size:14px;">
                    </div>
                  </div>
-                 
                 <div class="mini-switch">
                     <button class="mini-opt ${!isMom ? 'selected' : ''}" onclick="changeBtnMode(${i}, 'toggle')">Tog</button>
                     <button class="mini-opt ${isMom ? 'selected' : ''}" onclick="changeBtnMode(${i}, 'momentary')">Pul</button>
@@ -888,1147 +549,270 @@
                    </button>
                  </div>
             `;
-                    container.appendChild(row);
-                });
-            }
-            function changeBtnMode(index, mode) {
-                btnModes[index] = mode;
-                localStorage.setItem("btnModes", JSON.stringify(btnModes));
-                renderConfigList();
-            }
-            function updateBtnLabel(index, newName) {
-                btnLabels[index] = newName;
-                localStorage.setItem("btnLabels", JSON.stringify(btnLabels));
-                const labelSpan = document.getElementById(`label-${index + 1}`);
-                if (labelSpan) labelSpan.textContent = newName;
-            }
-            function updateBtnVal(index, type, val) {
-                // Validate Hex
-                if (!/^[0-9A-Fa-f]{1,2}$/.test(val)) {
-                    alert("Invalid Hex");
-                    renderConfigList(); // Reset
-                    return;
-                }
-                val = val.toUpperCase().padStart(2, '0'); // Format to 2 chars
-                if (type === 'on') {
-                    btnOnVals[index] = val;
-                    localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals));
-                } else {
-                    btnOffVals[index] = val;
-                    localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals));
-                }
-                // sendBtnConfig(index); // Removed for manual save
-            }
-            /* --- SYNC FUNCTION MODIFIED --- */
-            async function syncAllBtnConfigs() {
-                if (!rxChar) return;
-                const overlay = document.getElementById("sync-overlay");
-                if (overlay) overlay.style.display = "flex";
-                log("Syncing Config to Device...");
-                for (let i = 0; i < 8; i++) {
-                    sendBtnConfig(i);
-                    await new Promise(r => setTimeout(r, 150)); // Small delay
-                    // Also send current state (OFF value) to ensure RAM is correct
-                    sendState(i + 1, btnStates[i]);
-                    await new Promise(r => setTimeout(r, 150));
-                }
-                if (overlay) overlay.style.display = "none";
-                log("Config Sync Complete");
-            }
-            function saveBtnConfig(index) {
-                sendBtnConfig(index);
-                alert(`Button ${index + 1} のON/OFF設定をデバイスに保存しました。`);
-            }
-            function sendBtnConfig(inIdx) {
-                if (!rxChar) return;
-                // Get values
-                const onValRaw = btnOnVals[inIdx];
-                const offValRaw = btnOffVals[inIdx];
-                // Convert Hex to Decimal for transmission
-                const onVal = parseInt(onValRaw, 16);
-                const offVal = parseInt(offValRaw, 16);
-                if (isNaN(onVal) || isNaN(offVal)) return;
-                const cmd = `CFGBTN=${inIdx},${onVal},${offVal}`;
-                rxChar.writeValue(new TextEncoder().encode(cmd))
-                    .catch(e => console.log("TX Config Err"));
-            }
-            function updateBtnDelay(index, type, val) {
-                let v = parseFloat(val);
-                if (isNaN(v) || v < 0) v = 0;
-                if (type === 'on') {
-                    btnOnDelays[index] = v;
-                    localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
-                } else {
-                    btnOffDelays[index] = v;
-                    localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
-                }
-            }
-            function updateBtnColor(index, newColor) {
-                btnColors[index] = newColor;
-                localStorage.setItem("btnColors", JSON.stringify(btnColors));
-                const btn = document.getElementById(`btn-${index + 1}`);
-                if (btn) {
-                    btn.style.setProperty('--btn-color', newColor);
-                }
-            }
-            /* --- Endian Logic (Ver 3.0) --- */
-            function updateBtnEndian(index, mode) {
-                btnEndian[index] = mode;
-                localStorage.setItem("btnEndian", JSON.stringify(btnEndian));
-                renderConfigList();
-            }
-            function applyPreset(type) {
-                if (type === 'normal') {
-                    btnEndian = Array(8).fill('big');
-                } else {
-                    btnEndian = Array(8).fill('little');
-                }
-                localStorage.setItem("btnEndian", JSON.stringify(btnEndian));
-                renderConfigList();
-            }
-            /* --- Auth Logic (Ver 4.0) --- */
-            async function toggleBtnAuth(index) {
-                // Ver 4.2: Require Auth to Unlock
-                if (btnAuth[index]) {
-                    // Currently Locked -> Unlocking
-                    const authResult = await checkBiometricAuth();
-                    if (!authResult) {
-                        alert("白 Authentication Failed. Cannot Unlock.");
-                        return;
-                    }
-                }
-                btnAuth[index] = !btnAuth[index];
-                localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
-                renderConfigList();
-            }
-            // Ver 4.1: Biometric Registration Logic
-            // Converts an ArrayBuffer to a Base64 URL-safe string
-            function bufferToBase64(buffer) {
-                const bytes = new Uint8Array(buffer);
-                let binary = '';
-                for (let i = 0; i < bytes.byteLength; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                }
-                return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-            }
-            // Converts a Base64 URL-safe string to an ArrayBuffer
-            function base64ToBuffer(base64) {
-                const binary = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
-                return bytes.buffer;
-            }
-            async function registerBiometric() {
-                if (!window.PublicKeyCredential) {
-                    alert("WebAuthn not supported.");
-                    return;
-                }
-                try {
-                    const challenge = new Uint8Array(32);
-                    window.crypto.getRandomValues(challenge);
-                    const publicKey = {
-                        challenge: challenge,
-                        rp: { name: "M5Atom CAN Keypad", id: window.location.hostname },
-                        user: {
-                            id: new Uint8Array(16), // Dummy user ID
-                            name: "user@local",
-                            displayName: "Local User"
-                        },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                        authenticatorSelection: {
-                            authenticatorAttachment: "platform", // FaceID / TouchID
-                            userVerification: "required"
-                        },
-                        timeout: 60000,
-                        attestation: "none"
-                    };
-                    const credential = await navigator.credentials.create({ publicKey });
-                    // Save Credential ID
-                    const credId = bufferToBase64(credential.rawId);
-                    localStorage.setItem("authCredentialId", credId);
-                    authCredentialId = credId;
-                    alert("Biometric Registered Successfully! 🔓 -> 🔒");
-                    renderConfigList(); // Update UI
-                } catch (err) {
-                    console.error("Registration failed", err);
-                    alert("Registration Failed: " + err.message);
-                }
-            }
-            async function clearBiometric() {
-                // Ver 4.2: Require Auth to Clear
-                const authResult = await checkBiometricAuth();
-                if (!authResult) {
-                    alert("白 Authentication Failed. Cannot Clear.");
-                    return;
-                }
-                if (confirm("Clear registered biometric data?")) {
-                    localStorage.removeItem("authCredentialId");
-                    authCredentialId = null;
-                    renderConfigList();
-                }
-            }
-            async function checkBiometricAuth() {
-                if (!window.PublicKeyCredential) {
-                    alert("Biometric authentication not supported on this device/browser.");
-                    return false;
-                }
-                // Ver 4.1: Check if registered
-                if (!authCredentialId) {
-                    alert("Biometric not registered. Please register in Settings.");
-                    return false;
-                }
-                try {
-                    const challenge = new Uint8Array(32);
-                    window.crypto.getRandomValues(challenge);
-                    const publicKeyCredentialRequestOptions = {
-                        challenge: challenge,
-                        timeout: 60000,
-                        userVerification: "required",
-                        rpId: window.location.hostname,
-                        allowCredentials: [{
-                            id: base64ToBuffer(authCredentialId),
-                            type: 'public-key',
-                            transports: ['internal']
-                        }]
-                    };
-                    const credential = await navigator.credentials.get({
-                        publicKey: publicKeyCredentialRequestOptions
-                    });
-                    if (credential) {
-                        return true;
-                    }
-                } catch (err) {
-                    console.error("Auth failed", err);
-                }
-                return false;
-            }
-            /* --- Feedback Logic (Ver 3.1) --- */
-            function setVibe(state) {
-                cfgVibe = state;
-                localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe));
-                updateFeedbackUI();
-            }
-            function setSound(state) {
-                cfgSound = state;
-                localStorage.setItem("cfgSound", JSON.stringify(cfgSound));
-                updateFeedbackUI();
-                if (state) initAudio();
-            }
-            function updateFeedbackUI() {
-                const vo = document.getElementById('btn-vibe-on');
-                const vf = document.getElementById('btn-vibe-off');
-                if (vo && vf) {
-                    vo.className = `mini-opt ${cfgVibe ? 'selected' : ''}`;
-                    vf.className = `mini-opt ${!cfgVibe ? 'selected' : ''}`;
-                }
-                const so = document.getElementById('btn-sound-on');
-                const sf = document.getElementById('btn-sound-off');
-                if (so && sf) {
-                    so.className = `mini-opt ${cfgSound ? 'selected' : ''}`;
-                    sf.className = `mini-opt ${!cfgSound ? 'selected' : ''}`;
-                }
-            }
-            /* --- Icon Picker Logic (Ver 3.3) --- */
-            let currentIconBtnIndex = -1;
-            function openIconPicker(index) {
-                currentIconBtnIndex = index;
-                const overlay = document.getElementById('icon-picker-overlay');
-                const grid = document.getElementById('icon-picker-grid');
-                // Generate Grid Content dynamically to render SVGs
-                let html = `<button onclick="selectIcon('none')" style="padding:10px; background:#444; border:none; color:white; border-radius:5px;">TXT</button>`;
-                // Iterate over ICONS (skip 'none')
-                for (const [key, svg] of Object.entries(ICONS)) {
-                    if (key === 'none') continue;
-                    html += `<button onclick="selectIcon('${key}')" style="padding:5px; background:none; border:1px solid #444; color:white; border-radius:5px; height:40px; width:40px;">${svg}</button>`;
-                }
-                grid.innerHTML = html;
-                overlay.style.display = 'flex';
-            }
-            function closeIconPicker() {
-                document.getElementById('icon-picker-overlay').style.display = 'none';
-            }
-            function selectIcon(iconKey) {
-                if (currentIconBtnIndex >= 0) {
-                    btnIcons[currentIconBtnIndex] = iconKey;
-                    localStorage.setItem("btnIcons", JSON.stringify(btnIcons));
-                    renderConfigList();
-                    renderKeypadGrid(); // Update Main View immediately
-                    closeIconPicker();
-                }
-            }
-            /* --- Screen Wake Lock Logic (Ver 1.2 Fixed) --- */
-            let wakeLock = null;
-            async function requestWakeLock() {
-                try {
-                    if ('wakeLock' in navigator) {
-                        wakeLock = await navigator.wakeLock.request('screen');
-                        console.log('Wake Lock is active!');
-                        wakeLock.addEventListener('release', () => {
-                            console.log('Wake Lock released');
-                        });
-                    }
-                } catch (err) {
-                    console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
-                }
-            }
-            // Re-acquire lock when visibility changes (if it was dropped)
-            document.addEventListener('visibilitychange', async () => {
-                if (wakeLock !== null && document.visibilityState === 'visible') {
-                    await requestWakeLock();
-                }
+                container.appendChild(row);
             });
-            function initAudio() {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                } else if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
+        }
+        function changeBtnMode(index, mode) { btnModes[index] = mode; localStorage.setItem("btnModes", JSON.stringify(btnModes)); renderConfigList(); }
+        function updateBtnLabel(index, newName) { btnLabels[index] = newName; localStorage.setItem("btnLabels", JSON.stringify(btnLabels)); const labelSpan = document.getElementById(`label-${index + 1}`); if (labelSpan) labelSpan.textContent = newName; }
+        function updateBtnVal(index, type, val) {
+            if (!/^[0-9A-Fa-f]{1,2}$/.test(val)) { alert("Invalid Hex"); renderConfigList(); return; }
+            val = val.toUpperCase().padStart(2, '0');
+            if (type === 'on') { btnOnVals[index] = val; localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals)); } else { btnOffVals[index] = val; localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals)); }
+        }
+        async function syncAllBtnConfigs() {
+            if (!rxChar) return;
+            const overlay = document.getElementById("sync-overlay"); if (overlay) overlay.style.display = "flex";
+            log("Syncing Config to Device...");
+            for (let i = 0; i < 8; i++) { sendBtnConfig(i); await new Promise(r => setTimeout(r, 150)); sendState(i + 1, btnStates[i]); await new Promise(r => setTimeout(r, 150)); }
+            if (overlay) overlay.style.display = "none"; log("Config Sync Complete");
+        }
+        function saveBtnConfig(index) { sendBtnConfig(index); alert(`Button ${index + 1} のON/OFF設定をデバイスに保存しました。`); }
+        function sendBtnConfig(inIdx) {
+            if (!rxChar) return;
+            const onVal = parseInt(btnOnVals[inIdx], 16);
+            const offVal = parseInt(btnOffVals[inIdx], 16);
+            if (isNaN(onVal) || isNaN(offVal)) return;
+            const cmd = `CFGBTN=${inIdx},${onVal},${offVal}`;
+            rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => console.log("TX Config Err"));
+        }
+        function updateBtnDelay(index, type, val) {
+            let v = parseFloat(val); if (isNaN(v) || v < 0) v = 0;
+            if (type === 'on') { btnOnDelays[index] = v; localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays)); } else { btnOffDelays[index] = v; localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays)); }
+        }
+        function updateBtnColor(index, newColor) { btnColors[index] = newColor; localStorage.setItem("btnColors", JSON.stringify(btnColors)); const btn = document.getElementById(`btn-${index + 1}`); if (btn) { btn.style.setProperty('--btn-color', newColor); } }
+        function updateBtnEndian(index, mode) { btnEndian[index] = mode; localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); renderConfigList(); }
+        function applyPreset(type) { if (type === 'normal') { btnEndian = Array(8).fill('big'); } else { btnEndian = Array(8).fill('little'); } localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); renderConfigList(); }
+        async function toggleBtnAuth(index) {
+            if (btnAuth[index]) { const authResult = await checkBiometricAuth(); if (!authResult) { alert("白 Authentication Failed. Cannot Unlock."); return; } }
+            btnAuth[index] = !btnAuth[index]; localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); renderConfigList();
+        }
+        function bufferToBase64(buffer) { const bytes = new Uint8Array(buffer); let binary = ''; for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); } return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+        function base64ToBuffer(base64) { const binary = atob(base64.replace(/-/g, '+').replace(/_/g, '/')); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); } return bytes.buffer; }
+        async function registerBiometric() {
+            if (!window.PublicKeyCredential) { alert("WebAuthn not supported."); return; }
+            try {
+                const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+                const publicKey = { challenge: challenge, rp: { name: "M5Atom CAN Keypad", id: window.location.hostname }, user: { id: new Uint8Array(16), name: "user@local", displayName: "Local User" }, pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000, attestation: "none" };
+                const credential = await navigator.credentials.create({ publicKey });
+                const credId = bufferToBase64(credential.rawId); localStorage.setItem("authCredentialId", credId); authCredentialId = credId; alert("Biometric Registered Successfully! 🔓 -> 🔒"); renderConfigList();
+            } catch (err) { console.error("Registration failed", err); alert("Registration Failed: " + err.message); }
+        }
+        async function clearBiometric() { const authResult = await checkBiometricAuth(); if (!authResult) { alert("白 Authentication Failed. Cannot Clear."); return; } if (confirm("Clear registered biometric data?")) { localStorage.removeItem("authCredentialId"); authCredentialId = null; renderConfigList(); } }
+        async function checkBiometricAuth() {
+            if (!window.PublicKeyCredential) { alert("Biometric authentication not supported on this device/browser."); return false; }
+            if (!authCredentialId) { alert("Biometric not registered. Please register in Settings."); return false; }
+            try { const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge); const publicKeyCredentialRequestOptions = { challenge: challenge, timeout: 60000, userVerification: "required", rpId: window.location.hostname, allowCredentials: [{ id: base64ToBuffer(authCredentialId), type: 'public-key', transports: ['internal'] }] }; const credential = await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions }); if (credential) { return true; } } catch (err) { console.error("Auth failed", err); } return false;
+        }
+        function setVibe(state) { cfgVibe = state; localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe)); updateFeedbackUI(); }
+        function setSound(state) { cfgSound = state; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); updateFeedbackUI(); if (state) initAudio(); }
+        function updateFeedbackUI() {
+            const vo = document.getElementById('btn-vibe-on'); const vf = document.getElementById('btn-vibe-off'); if (vo && vf) { vo.className = `mini-opt ${cfgVibe ? 'selected' : ''}`; vf.className = `mini-opt ${!cfgVibe ? 'selected' : ''}`; }
+            const so = document.getElementById('btn-sound-on'); const sf = document.getElementById('btn-sound-off'); if (so && sf) { so.className = `mini-opt ${cfgSound ? 'selected' : ''}`; sf.className = `mini-opt ${!cfgSound ? 'selected' : ''}`; }
+        }
+        let currentIconBtnIndex = -1;
+        function openIconPicker(index) {
+            currentIconBtnIndex = index; const overlay = document.getElementById('icon-picker-overlay'); const grid = document.getElementById('icon-picker-grid');
+            let html = `<button onclick="selectIcon('none')" style="padding:10px; background:#444; border:none; color:white; border-radius:5px;">TXT</button>`;
+            for (const [key, svg] of Object.entries(ICONS)) { if (key === 'none') continue; html += `<button onclick="selectIcon('${key}')" style="padding:5px; background:none; border:1px solid #444; color:white; border-radius:5px; height:40px; width:40px;">${svg}</button>`; }
+            grid.innerHTML = html; overlay.style.display = 'flex';
+        }
+        function closeIconPicker() { document.getElementById('icon-picker-overlay').style.display = 'none'; }
+        function selectIcon(iconKey) { if (currentIconBtnIndex >= 0) { btnIcons[currentIconBtnIndex] = iconKey; localStorage.setItem("btnIcons", JSON.stringify(btnIcons)); renderConfigList(); renderKeypadGrid(); closeIconPicker(); } }
+        let wakeLock = null;
+        async function requestWakeLock() { try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); console.log('Wake Lock is active!'); wakeLock.addEventListener('release', () => { console.log('Wake Lock released'); }); } } catch (err) { console.error(`Wake Lock Error: ${err.name}, ${err.message}`); } }
+        document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') { await requestWakeLock(); } });
+        function initAudio() { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } else if (audioCtx.state === 'suspended') { audioCtx.resume(); } }
+        function triggerFeedback() { if (cfgVibe && navigator.vibrate) { navigator.vibrate(15); } if (cfgSound && audioCtx) { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'square'; osc.frequency.value = 2000; gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.05); } }
+        function toggleFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { }); } else { if (document.exitFullscreen) { document.exitFullscreen(); } } }
+        function enterFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { }); } }
+        function showMain() { document.getElementById("view-settings").style.display = "none"; document.getElementById("view-meter").style.display = "none"; document.getElementById("view-settings").classList.remove("active"); document.getElementById("view-meter").classList.remove("active"); const v = document.getElementById("view-main"); v.style.display = "flex"; v.classList.add("active"); }
+        function showMeter() { document.getElementById("view-main").style.display = "none"; document.getElementById("view-settings").style.display = "none"; document.getElementById("view-main").classList.remove("active"); document.getElementById("view-settings").classList.remove("active"); const v = document.getElementById("view-meter"); v.style.display = "flex"; v.classList.add("active"); }
+        function showSettings() { renderConfigList(); updateFeedbackUI(); document.getElementById("view-main").style.display = "none"; document.getElementById("view-meter").style.display = "none"; document.getElementById("view-main").classList.remove("active"); document.getElementById("view-meter").classList.remove("active"); const v = document.getElementById("view-settings"); v.style.display = "flex"; v.classList.add("active"); }
+        function log(t) { const el = document.getElementById("log"); const time = new Date().toLocaleTimeString().split(' ')[0]; el.textContent = `[${time}] ${t}\n` + el.textContent.substring(0, 1000); }
+        function updateStatus(connected) {
+            isConnected = connected; const ind = document.getElementById("status-display"); const overlay = document.getElementById("connect-overlay"); const keypad = document.getElementById("keypad"); const discRow = document.getElementById("disconnect-row");
+            if (connected) { ind.textContent = "🟢 BLE"; ind.classList.add("connected"); overlay.style.display = "none"; keypad.classList.add("visible"); discRow.style.display = "flex"; resetWatchdog(); document.getElementById("can-status-display").style.display = "block"; updateMainSoundIcon(); } else { ind.textContent = "🔴 Disconnected"; ind.classList.remove("connected"); ind.classList.remove("stalled"); overlay.style.display = "flex"; keypad.classList.remove("visible"); discRow.style.display = "none"; document.getElementById("can-status-display").style.display = "none"; clearTimeout(watchdogTimer); }
+        }
+        function resetWatchdog() { if (!isConnected) return; const ind = document.getElementById("status-display"); if (ind.textContent.includes("No Resp")) { ind.textContent = "🟢 BLE"; ind.style.color = "#00ff00"; ind.style.borderColor = "#00ff00"; ind.classList.remove("stalled"); ind.classList.add("connected"); } clearTimeout(watchdogTimer); watchdogTimer = setTimeout(() => { ind.textContent = "⚠️ No Resp"; ind.style.color = "orange"; ind.style.borderColor = "orange"; ind.classList.remove("connected"); ind.classList.add("stalled"); }, WATCHDOG_TIMEOUT); }
+        function updateCanStatus(st) { const el = document.getElementById("can-status-display"); if (!el) return; if (el.style.display === "none") el.style.display = "block"; if (st === "CAN_OK") { el.textContent = "CAN: OK"; el.className = "status-indicator can-ok"; el.style.color = "#00ff00"; el.style.borderColor = "#00ff00"; } else { el.textContent = "CAN: ERR"; el.className = "status-indicator can-err"; el.style.color = "#ff0000"; el.style.borderColor = "#ff0000"; } }
+        async function handleStartConnect() { initAudio(); enterFullscreen(); requestWakeLock(); await connect(); }
+        async function connect() {
+            try {
+                device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'M5' }], optionalServices: [SERVICE_UUID] });
+                gattServer = await device.gatt.connect(); device.addEventListener('gattserverdisconnected', () => { log("Disconnected Event"); updateStatus(false); });
+                const svc = await gattServer.getPrimaryService(SERVICE_UUID); rxChar = await svc.getCharacteristic(RX_UUID); txChar = await svc.getCharacteristic(TX_UUID);
+                await txChar.startNotifications(); txChar.addEventListener('characteristicvaluechanged', handleNotifications);
+                showMain(); updateStatus(true); log("BLE Ready"); setTimeout(syncAllBtnConfigs, 500);
+            } catch (e) { log("Err: " + e); updateStatus(false); }
+        }
+        function disconnect() { if (device && device.gatt.connected) { device.gatt.disconnect(); updateStatus(false); } }
+        function handleNotifications(event) {
+            const decoder = new TextDecoder('utf-8'); const cmd = decoder.decode(event.target.value); const cleanedCmd = cmd.replace(/(\r\n|\n|\r)/gm, "").trim(); log("RX: " + cleanedCmd); resetWatchdog();
+            if (cleanedCmd.startsWith("ID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync ID: " + val); canIdVal = val; localStorage.setItem("canIdVal", canIdVal); const el = document.getElementById("can-id-input"); if (el) el.value = canIdVal; }
+            else if (cleanedCmd.startsWith("KID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync KID: " + val); kMeterIdVal = val; localStorage.setItem("kMeterIdVal", kMeterIdVal); const el = document.getElementById("k-meter-id-input"); if (el) el.value = kMeterIdVal; }
+            else if (cleanedCmd.startsWith("VAL=")) {
+                // ★ Modified for Calc
+                const rawVal = parseInt(cleanedCmd.split("=")[1]);
+                const calcVal = (rawVal * rxMul) + rxAdd;
+                const dispVal = calcVal.toFixed(rxDec);
+
+                const el = document.getElementById("meter-val-2");
+                const unitEl = document.getElementById("meter-unit-2");
+                if (el) {
+                    el.textContent = dispVal;
+                    el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FFD700", 100);
+                }
+                if (unitEl) unitEl.textContent = rxUnit;
+                
+                // ★ Update Live Preview
+                const liveValEl = document.getElementById("rx-live-val");
+                const liveRawEl = document.getElementById("rx-live-raw");
+                if (liveValEl) {
+                    liveValEl.textContent = dispVal + " " + rxUnit;
+                    liveRawEl.textContent = `Raw: ${rawVal} (0x${rawVal.toString(16).toUpperCase()})`;
                 }
             }
-            function triggerFeedback() {
-                // Vibe
-                if (cfgVibe && navigator.vibrate) {
-                    navigator.vibrate(15);
-                }
-                // Sound
-                if (cfgSound && audioCtx) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'square';
-                    osc.frequency.value = 2000;
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.05);
+            else if (cleanedCmd.startsWith("TEMP=")) {
+                const val = cleanedCmd.split("=")[1]; const el = document.getElementById("meter-val-1");
+                if (el) {
+                    el.textContent = val; let tempVal = parseInt(val);
+                    if (!isNaN(tempVal) && tempVal >= tempWarnVal) { el.classList.add("temp-warning"); el.classList.remove("val-cyan"); el.classList.add("val-red"); if (Date.now() - lastTempWarnTime > 5000) { speakVoice("排気温度、警告！"); lastTempWarnTime = Date.now(); } } else { el.classList.remove("temp-warning"); el.classList.remove("val-red"); el.classList.add("val-cyan"); }
                 }
             }
-            /* --- Fullscreen Logic --- */
-            function toggleFullscreen() {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(e => {
-                        // log("FS Err: " + e); // Common if not user gesture
-                    });
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
+            else if (cleanedCmd.startsWith("STATE=")) {
+                const states = cleanedCmd.substring(6).split(',');
+                if (states.length >= 8) {
+                    const now = Date.now();
+                    for (let i = 0; i < 8; i++) {
+                        const s = states[i]; if (s === undefined) continue;
+                        if (btnModes[i] === 'momentary') { if (now - lastPulseTimes[i] < 500) { continue; } }
+                        let receivedVal = parseInt(s, 10); if (btnEndian[i] === 'little') { receivedVal = reverseBits(receivedVal); }
+                        const onVal = parseInt(btnOnVals[i], 16); btnStates[i] = (receivedVal === onVal); updateBtnVisual(i + 1, btnStates[i]);
                     }
                 }
+            } else if (cleanedCmd.startsWith("RXID=")) {
+                const val = cleanedCmd.split("=")[1]; log("✅ RX ID confirmed by device: " + val);
+                const statusEl = document.getElementById("rx-config-status"); if (statusEl) { statusEl.textContent = "✅ Device confirmed: " + val; statusEl.style.color = "#51cf66"; }
             }
-            function enterFullscreen() {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(e => {
-                        // log("FS IGNORED");
-                    });
-                }
+            else if (cleanedCmd.startsWith("STATUS=")) { const st = cleanedCmd.substring(7); updateCanStatus(st); }
+        }
+        function updateBtnVisual(n, isActive) { const btn = document.getElementById('btn-' + n); if (!btn) return; if (isActive) { btn.classList.add('active'); } else { btn.classList.remove('active'); } }
+        function sendState(n, state) {
+            const btnIndex = n - 1; btnStates[btnIndex] = state; updateBtnVisual(n, state);
+            if (rxChar) {
+                const valStr = state ? btnOnVals[btnIndex] : btnOffVals[btnIndex]; let valInt = parseInt(valStr, 16);
+                if (btnEndian[btnIndex] === 'little') { valInt = reverseBits(valInt); }
+                const targetN = btnIndex + 1; const cmd = `${targetN}=${valInt}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => { });
             }
-            /* --- Navigation --- */
-            function showMain() {
-                // Force Hide Others
-                document.getElementById("view-settings").style.display = "none";
-                document.getElementById("view-meter").style.display = "none";
-                document.getElementById("view-settings").classList.remove("active");
-                document.getElementById("view-meter").classList.remove("active");
-                // Show Main
-                const v = document.getElementById("view-main");
-                v.style.display = "flex";
-                v.classList.add("active");
-            }
-            function showMeter() {
-                // Force Hide Others
-                document.getElementById("view-main").style.display = "none";
-                document.getElementById("view-settings").style.display = "none";
-                document.getElementById("view-main").classList.remove("active");
-                document.getElementById("view-settings").classList.remove("active");
-                // Show Meter
-                const v = document.getElementById("view-meter");
-                v.style.display = "flex";
-                v.classList.add("active");
-            }
-            function showSettings() {
-                renderConfigList();
-                updateFeedbackUI();
-                // Force Hide Others
-                document.getElementById("view-main").style.display = "none";
-                document.getElementById("view-meter").style.display = "none";
-                document.getElementById("view-main").classList.remove("active");
-                document.getElementById("view-meter").classList.remove("active");
-                // Show Settings
-                const v = document.getElementById("view-settings");
-                v.style.display = "flex";
-                v.classList.add("active");
-            }
-            function log(t) {
-                const el = document.getElementById("log");
-                const time = new Date().toLocaleTimeString().split(' ')[0];
-                el.textContent = `[${time}] ${t}\n` + el.textContent.substring(0, 1000);
-            }
-            function updateStatus(connected) {
-                isConnected = connected;
-                const ind = document.getElementById("status-display");
-                const overlay = document.getElementById("connect-overlay");
-                const keypad = document.getElementById("keypad");
-                const discRow = document.getElementById("disconnect-row");
-                if (connected) {
-                    ind.textContent = "🟢 BLE";
-                    ind.classList.add("connected");
-                    // Show Keypad, Hide Overlay
-                    overlay.style.display = "none";
-                    keypad.classList.add("visible");
-                    // Show Disconnect option in settings
-                    discRow.style.display = "flex";
-                    // Start waiting for heartbeat
-                    resetWatchdog();
-                    document.getElementById("can-status-display").style.display = "block";
-                    updateMainSoundIcon();
-                } else {
-                    ind.textContent = "🔴 Disconnected";
-                    ind.classList.remove("connected");
-                    ind.classList.remove("stalled");
-                    // Hide Keypad, Show Overlay
-                    overlay.style.display = "flex";
-                    keypad.classList.remove("visible");
-                    // Hide Disconnect option
-                    discRow.style.display = "none";
-                    document.getElementById("can-status-display").style.display = "none";
-                    clearTimeout(watchdogTimer);
-                }
-            }
-            function resetWatchdog() {
-                if (!isConnected) return;
-                const ind = document.getElementById("status-display");
-                // Restore "Connected" visual if it was stalled
-                if (ind.textContent.includes("No Resp")) {
-                    ind.textContent = "🟢 BLE";
-                    ind.style.color = "#00ff00"; // Green
-                    ind.style.borderColor = "#00ff00";
-                    ind.classList.remove("stalled");
-                    ind.classList.add("connected");
-                }
-                clearTimeout(watchdogTimer);
-                watchdogTimer = setTimeout(() => {
-                    // Heartbeat lost
-                    ind.textContent = "⚠️ No Resp";
-                    ind.style.color = "orange";
-                    ind.style.borderColor = "orange"; // Orange
-                    ind.classList.remove("connected");
-                    ind.classList.add("stalled");
-                    // Optional: Auto disconnect logic? For now just visual warning.
-                }, WATCHDOG_TIMEOUT);
-            }
-            function updateCanStatus(st) {
-                const el = document.getElementById("can-status-display");
-                if (!el) return;
-                // Ensure visible
-                if (el.style.display === "none") el.style.display = "block";
-                if (st === "CAN_OK") {
-                    el.textContent = "CAN: OK";
-                    el.className = "status-indicator can-ok";
-                    el.style.color = "#00ff00"; // Force Green
-                    el.style.borderColor = "#00ff00";
-                } else {
-                    el.textContent = "CAN: ERR";
-                    el.className = "status-indicator can-err";
-                    el.style.color = "#ff0000"; // Force Red
-                    el.style.borderColor = "#ff0000";
-                }
-            }
-            // --- CONNECT FLOW (Composite Action) ---
-            async function handleStartConnect() {
-                initAudio();
-                // 1. Enter Fullscreen (User Gesture)
-                enterFullscreen();
-                // 2. Request Wake Lock (User Gesture)
-                // Note: We do NOT await this. We let it fire in the background.
-                // Awaiting it might delay the 'connect()' call enough to lose the "User Gesture" token required for popups.
-                requestWakeLock();
-                // 3. Start BLE Connect (User Gesture - Must happen immediately)
-                await connect();
-            }
-            async function connect() {
+        }
+        function reverseBits(b) { b = b & 0xFF; let r = 0; for (let i = 0; i < 8; i++) { if ((b >> i) & 1) { r |= 1 << (7 - i); } } return r; }
+        async function handlePointerDown(n, e) {
+            if (e) { e.preventDefault(); } triggerFeedback(); const btnEl = document.getElementById(`btn-${n}`); if (btnEl) btnEl.classList.add('pressing'); const idx = n - 1;
+            if (btnAuth[idx]) { const authResult = await checkBiometricAuth(); if (!authResult) { if (btnEl) btnEl.classList.remove('pressing'); alert("🔒 Authentication Failed"); return; } }
+            const currentState = btnStates[idx]; const targetState = !currentState; const delay = targetState ? btnOnDelays[idx] : btnOffDelays[idx];
+            if (delay > 0) { holdTimers[idx] = setTimeout(() => { executeAction(n); holdTimers[idx] = null; if (btnEl) btnEl.classList.remove('pressing'); }, delay * 1000); } else { executeAction(n); if (btnEl) btnEl.classList.remove('pressing'); }
+        }
+        function handlePointerUp(n, e) { if (e) e.preventDefault(); const idx = n - 1; if (holdTimers[idx]) { clearTimeout(holdTimers[idx]); holdTimers[idx] = null; } const btnEl = document.getElementById(`btn-${n}`); if (btnEl) btnEl.classList.remove('pressing'); }
+        function executeAction(n) { const idx = n - 1; const isMomentary = (btnModes[idx] === 'momentary'); if (isMomentary) { triggerPulse(n); } else { const newState = !btnStates[idx]; sendState(n, newState); } }
+        function triggerPulse(n) { const idx = n - 1; sendState(n, true); setTimeout(() => { sendState(n, false); }, 150); lastPulseTimes[idx] = Date.now(); }
+        function setCanId() { const el = document.getElementById("can-id-input"); const val = el.value; if (val.match(/^[0-9A-Fa-f]+$/)) { log(`Set CAN ID: 0x${val}`); localStorage.setItem("canIdVal", val); canIdVal = val; if (rxChar) { const cmd = `ID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR ID")); } } else { alert("Invalid Hex ID"); } }
+        function setKMeterId() { const el = document.getElementById("k-meter-id-input"); const val = el.value; if (val.match(/^[0-9A-Fa-f]+$/)) { log(`Set K-Meter ID: 0x${val}`); localStorage.setItem("kMeterIdVal", val); kMeterIdVal = val; if (rxChar) { const cmd = `KID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR KID")); } } else { alert("Invalid Hex ID"); } }
+        
+        function setRxConfig() {
+            // Get from Inputs (Synced with globals)
+            const idVal = document.getElementById("rx-monitor-id-input").value.trim();
+            const idxVal = document.getElementById("rx-byte-index-input").value;
+            const modeVal = document.getElementById("rx-mode-select").value;
+            const statusEl = document.getElementById("rx-config-status");
+            
+            // New Calc Values
+            const mulVal = parseFloat(document.getElementById("rx-mul-input").value) || 1.0;
+            const addVal = parseFloat(document.getElementById("rx-add-input").value) || 0;
+            const decVal = parseInt(document.getElementById("rx-dec-select").value) || 0;
+            const unitVal = document.getElementById("rx-unit-input").value || "";
+
+            if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID (例: 90, 1A3)"); return; }
+            
+            // Save Globals & Storage
+            rxMonitorId = idVal; rxByteIndex = idxVal; rxMode = modeVal;
+            rxMul = mulVal; rxAdd = addVal; rxDec = decVal; rxUnit = unitVal;
+            
+            localStorage.setItem("rxMonitorId", rxMonitorId); localStorage.setItem("rxByteIndex", rxByteIndex); localStorage.setItem("rxMode", rxMode);
+            localStorage.setItem("rxMul", rxMul); localStorage.setItem("rxAdd", rxAdd); localStorage.setItem("rxDec", rxDec); localStorage.setItem("rxUnit", rxUnit);
+
+            const idDec = parseInt(idVal, 16); const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`; log("TX: " + cmd);
+            if (!rxChar) { if (statusEl) { statusEl.textContent = "✅ Saved locally (not connected)"; statusEl.style.color = "#ffc107"; } return; }
+            rxChar.writeValue(new TextEncoder().encode(cmd)).then(() => { log("SET_RX sent OK: 0x" + idVal.toUpperCase()); if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; } }).catch(e => { log("TX ERR SET_RX: " + e); if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; } });
+        }
+        function exportConfig() {
+            const config = { version: "8.0.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
+        }
+        function importConfig() { document.getElementById('import-file').click(); }
+        function handleFileSelect(input) {
+            const file = input.files[0]; if (!file) return; const reader = new FileReader();
+            reader.onload = function (e) {
                 try {
-                    device = await navigator.bluetooth.requestDevice({
-                        filters: [{
-                            namePrefix: 'M5'
-                        }],
-                        optionalServices: [SERVICE_UUID]
-                    });
-                    gattServer = await device.gatt.connect();
-                    device.addEventListener('gattserverdisconnected', () => {
-                        log("Disconnected Event");
-                        updateStatus(false);
-                    });
-                    const svc = await gattServer.getPrimaryService(SERVICE_UUID);
-                    rxChar = await svc.getCharacteristic(RX_UUID);
-                    txChar = await svc.getCharacteristic(TX_UUID);
-                    await txChar.startNotifications();
-                    txChar.addEventListener('characteristicvaluechanged', handleNotifications);
-                    // Fix: Force Main View to clear any overlapping elements on initial load
-                    showMain();
-                    updateStatus(true);
-                    log("BLE Ready");
-                    // Sync Config Automatically
-                    setTimeout(syncAllBtnConfigs, 500);
-                } catch (e) {
-                    log("Err: " + e);
-                    updateStatus(false);
-                }
+                    const config = JSON.parse(e.target.result);
+                    if (config.btnLabels) { btnLabels = config.btnLabels; localStorage.setItem("btnLabels", JSON.stringify(btnLabels)); }
+                    if (config.btnModes) { btnModes = config.btnModes; localStorage.setItem("btnModes", JSON.stringify(btnModes)); }
+                    if (config.btnColors) { btnColors = config.btnColors; localStorage.setItem("btnColors", JSON.stringify(btnColors)); }
+                    if (config.btnOnVals) { btnOnVals = config.btnOnVals; localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals)); }
+                    if (config.btnOffVals) { btnOffVals = config.btnOffVals; localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals)); }
+                    if (config.btnEndian) { btnEndian = config.btnEndian; localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); }
+                    if (config.btnIcons) { btnIcons = config.btnIcons; localStorage.setItem("btnIcons", JSON.stringify(btnIcons)); }
+                    if (config.btnAuth) { btnAuth = config.btnAuth; localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); }
+                    if (config.cfgVibe !== undefined) { cfgVibe = config.cfgVibe; localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe)); }
+                    if (config.cfgSound !== undefined) { cfgSound = config.cfgSound; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); }
+                    if (config.canId) { document.getElementById("can-id-input").value = config.canId; canIdVal = config.canId; localStorage.setItem("canIdVal", canIdVal); }
+                    if (config.kMeterId) { document.getElementById("k-meter-id-input").value = config.kMeterId; kMeterIdVal = config.kMeterId; localStorage.setItem("kMeterIdVal", kMeterIdVal); }
+                    if (config.tempWarnVal) { tempWarnVal = config.tempWarnVal; localStorage.setItem("tempWarnVal", tempWarnVal); document.getElementById("temp-alarm-input").value = tempWarnVal; }
+                    if (config.btnOnDelays) { btnOnDelays = config.btnOnDelays; localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays)); }
+                    if (config.btnOffDelays) { btnOffDelays = config.btnOffDelays; localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays)); }
+                    // RX Config Import
+                    if (config.rxMonitorId) { rxMonitorId = config.rxMonitorId; localStorage.setItem("rxMonitorId", rxMonitorId); }
+                    if (config.rxByteIndex) { rxByteIndex = config.rxByteIndex; localStorage.setItem("rxByteIndex", rxByteIndex); }
+                    if (config.rxMode) { rxMode = config.rxMode; localStorage.setItem("rxMode", rxMode); }
+                    if (config.rxMul !== undefined) { rxMul = config.rxMul; localStorage.setItem("rxMul", rxMul); }
+                    if (config.rxAdd !== undefined) { rxAdd = config.rxAdd; localStorage.setItem("rxAdd", rxAdd); }
+                    if (config.rxDec !== undefined) { rxDec = config.rxDec; localStorage.setItem("rxDec", rxDec); }
+                    if (config.rxUnit !== undefined) { rxUnit = config.rxUnit; localStorage.setItem("rxUnit", rxUnit); }
+                    
+                    if (!authCredentialId) { if (btnAuth.some(b => b === true)) { btnAuth = Array(8).fill(false); localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); alert("Safety: Locks disabled (No Credential)"); } }
+                    log("Config Loaded"); alert("Configuration Loaded Successfully"); renderConfigList(); renderKeypadGrid();
+                } catch (err) { log("Import Err: " + err); alert("Failed to load config"); }
+            }; reader.readAsText(file); input.value = '';
+        }
+        function renderKeypadGrid() {
+            const container = document.getElementById("keypad"); container.innerHTML = "";
+            for (let i = 1; i <= 8; i++) {
+                const b = document.createElement("div"); b.id = `btn-${i}`; b.className = "key-btn";
+                const iconKey = btnIcons[i - 1]; let innerHTML = '';
+                if (iconKey && iconKey !== 'none' && ICONS[iconKey]) { innerHTML = `<div style="width:50%; height:50%; margin-bottom:5px;">${ICONS[iconKey]}</div><span id="label-${i}" class="btn-label" style="font-size:0.9rem;">${btnLabels[i - 1]}</span>`; } else { innerHTML = `<span id="label-${i}" class="btn-label">${btnLabels[i - 1]}</span>`; }
+                b.innerHTML = innerHTML; b.style.setProperty('--btn-color', btnColors[i - 1]);
+                b.addEventListener('pointerdown', (e) => handlePointerDown(i, e)); b.addEventListener('pointerup', (e) => handlePointerUp(i, e)); b.addEventListener('pointerleave', (e) => handlePointerUp(i, e));
+                b.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false }); b.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); return false; }); container.appendChild(b);
             }
-            function disconnect() {
-                if (device && device.gatt.connected) {
-                    device.gatt.disconnect();
-                    updateStatus(false);
-                }
-            }
-            function handleNotifications(event) {
-                const decoder = new TextDecoder('utf-8');
-                const cmd = decoder.decode(event.target.value);
-                // Clean up string
-                const cleanedCmd = cmd.replace(/(\r\n|\n|\r)/gm, "").trim();
-                log("RX: " + cleanedCmd);
-                // Reset watchdog on ANY message from device
-                resetWatchdog();
-                if (cleanedCmd.startsWith("ID=")) {
-                    const val = cleanedCmd.split("=")[1];
-                    // Remove 0x if present for cleaner UI
-                    const cleanVal = val.replace("0x", "").replace("0X", "").toUpperCase();
-                    log("Sync ID: " + cleanVal);
-                    canIdVal = cleanVal;
-                    localStorage.setItem("canIdVal", canIdVal);
-                    // Update Input if exists
-                    const el = document.getElementById("can-id-input");
-                    if (el) el.value = canIdVal;
-                }
-                else if (cleanedCmd.startsWith("KID=")) {
-                    const val = cleanedCmd.split("=")[1];
-                    const cleanVal = val.replace("0x", "").replace("0X", "").toUpperCase();
-                    log("Sync KID: " + cleanVal);
-                    kMeterIdVal = cleanVal;
-                    localStorage.setItem("kMeterIdVal", kMeterIdVal);
-                    // Update Input if exists
-                    const el = document.getElementById("k-meter-id-input");
-                    if (el) el.value = kMeterIdVal;
-                }
-                else if (cleanedCmd.startsWith("VAL=")) {
-                    const val = cleanedCmd.split("=")[1];
-                    // Update Grid Cell 2 (Generic Monitor)
-                    const el = document.getElementById("meter-val-2");
-                    if (el) {
-                        el.textContent = val;
-                        // Flash effect
-                        el.style.color = "#FFF";
-                        setTimeout(() => el.style.color = "#FFD700", 100);
-                    }
-                }
-                else if (cleanedCmd.startsWith("TEMP=")) {
-                    const val = cleanedCmd.split("=")[1];
-                    // Update Grid Cell 1 (Exhaust Temp)
-                    const el = document.getElementById("meter-val-1");
-                    if (el) {
-                        el.textContent = val;
-                        // Temp Warning Logic
-                        let tempVal = parseInt(val);
-                        if (!isNaN(tempVal) && tempVal >= tempWarnVal) {
-                            el.classList.add("temp-warning");
-                            el.classList.remove("val-cyan");
-                            el.classList.add("val-red");
-                            if (Date.now() - lastTempWarnTime > 5000) {
-                                speakVoice("排気温度、警告！");
-                                lastTempWarnTime = Date.now();
-                            }
-                        } else {
-                            el.classList.remove("temp-warning");
-                            el.classList.remove("val-red");
-                            el.classList.add("val-cyan");
-                        }
-                    }
-                }
-                else if (cleanedCmd.startsWith("STATE=")) {
-                    const states = cleanedCmd.substring(6).split(',');
-                    if (states.length >= 8) {
-                        const now = Date.now();
-                        // Ver 3.2: Iterate Buttons (Fixed Index, Bit Reverse Logic)
-                        for (let i = 0; i < 8; i++) {
-                            const s = states[i];
-                            if (s === undefined) continue;
-                            if (btnModes[i] === 'momentary') {
-                                if (now - lastPulseTimes[i] < 500) {
-                                    continue; // Ignore sync
-                                }
-                            }
-                            // Version 2.7 Logic preserved
-                            let receivedVal = parseInt(s, 10);
-                            // Ver 3.2: Reverse Bits if Little Endian
-                            if (btnEndian[i] === 'little') {
-                                receivedVal = reverseBits(receivedVal);
-                            }
-                            const onVal = parseInt(btnOnVals[i], 16);
-                            btnStates[i] = (receivedVal === onVal);
-                            updateBtnVisual(i + 1, btnStates[i]);
-                        }
-                    }
-                } else if (cleanedCmd.startsWith("RXID=")) {
-                    // Python側からのRXID確認応答
-                    const val = cleanedCmd.split("=")[1];
-                    log("✅ RX ID confirmed by device: " + val);
-                    const statusEl = document.getElementById("rx-config-status");
-                    if (statusEl) { statusEl.textContent = "✅ Device confirmed: " + val; statusEl.style.color = "#51cf66"; }
-                }
-                else if (cleanedCmd.startsWith("STATUS=")) {
-                    const st = cleanedCmd.substring(7);
-                    updateCanStatus(st);
-                }
-            }
-            function updateBtnVisual(n, isActive) {
-                const btn = document.getElementById('btn-' + n);
-                if (!btn) return;
-                if (isActive) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            }
-            // Core function to send Specific State
-            function sendState(n, state) {
-                const btnIndex = n - 1;
-                btnStates[btnIndex] = state;
-                updateBtnVisual(n, state);
-                if (rxChar) {
-                    // Version 2.7: Send Configured Hex Value
-                    const valStr = state ? btnOnVals[btnIndex] : btnOffVals[btnIndex];
-                    let valInt = parseInt(valStr, 16);
-                    // Ver 3.2: Endian means Bit Reversal, NOT Byte Swap
-                    if (btnEndian[btnIndex] === 'little') {
-                        valInt = reverseBits(valInt);
-                    }
-                    // Target is always the button index + 1
-                    const targetN = btnIndex + 1;
-                    const cmd = `${targetN}=${valInt}`;
-                    rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .catch(e => {
-                            // log("TX ERR");
-                        });
-                }
-            }
-            function reverseBits(b) {
-                b = b & 0xFF;
-                let r = 0;
-                for (let i = 0; i < 8; i++) {
-                    if ((b >> i) & 1) {
-                        r |= 1 << (7 - i);
-                    }
-                }
-                return r;
-            }
-            // Ver 4.5: Long Press Logic
-            // Replaces sendStateDelayed
-            // --- Interaction Handlers ---
-            async function handlePointerDown(n, e) {
-                if (e) {
-                    e.preventDefault();
-                    // e.target.setPointerCapture(e.pointerId); 
-                }
-                // Instant Feedback
-                triggerFeedback();
-                const btnEl = document.getElementById(`btn-${n}`);
-                if (btnEl) btnEl.classList.add('pressing'); // Instant Visual Cue
-                const idx = n - 1;
-                // Ver 4.0: Check Auth
-                if (btnAuth[idx]) {
-                    const authResult = await checkBiometricAuth();
-                    if (!authResult) {
-                        if (btnEl) btnEl.classList.remove('pressing'); // Remove cue if failed
-                        alert("🔒 Authentication Failed");
-                        return;
-                    }
-                }
-                // Calc Delay needed
-                // If currently OFF (false), we want to turn ON -> Use OnDelay
-                // If currently ON (true), we want to turn OFF -> Use OffDelay
-                const currentState = btnStates[idx];
-                const targetState = !currentState;
-                const delay = targetState ? btnOnDelays[idx] : btnOffDelays[idx];
-                if (delay > 0) {
-                    // Start Timer
-                    holdTimers[idx] = setTimeout(() => {
-                        executeAction(n);
-                        holdTimers[idx] = null;
-                        if (btnEl) btnEl.classList.remove('pressing');
-                    }, delay * 1000);
-                } else {
-                    // Immediate
-                    executeAction(n);
-                    if (btnEl) btnEl.classList.remove('pressing');
-                }
-            }
-            function handlePointerUp(n, e) {
-                if (e) e.preventDefault();
-                const idx = n - 1;
-                // Cancel Timer if it exists
-                if (holdTimers[idx]) {
-                    clearTimeout(holdTimers[idx]);
-                    holdTimers[idx] = null;
-                }
-                const btnEl = document.getElementById(`btn-${n}`);
-                if (btnEl) btnEl.classList.remove('pressing');
-            }
-            function executeAction(n) {
-                const idx = n - 1;
-                const isMomentary = (btnModes[idx] === 'momentary');
-                if (isMomentary) {
-                    triggerPulse(n);
-                } else {
-                    // Toggle Mode
-                    const newState = !btnStates[idx];
-                    sendState(n, newState);
-                }
-            }
-            function triggerPulse(n) {
-                const idx = n - 1;
-                sendState(n, true); // ON
-                setTimeout(() => {
-                    sendState(n, false); // OFF
-                }, 150);
-                lastPulseTimes[idx] = Date.now();
-            }
-            function setCanId() {
-                const el = document.getElementById("can-id-input");
-                const val = el.value;
-                if (val.match(/^[0-9A-Fa-f]+$/)) {
-                    log(`Set CAN ID: 0x${val}`);
-                    localStorage.setItem("canIdVal", val);
-                    canIdVal = val;
-                    // Send command to device
-                    if (rxChar) {
-                        const cmd = `ID=${val}`;
-                        rxChar.writeValue(new TextEncoder().encode(cmd))
-                            .catch(e => log("TX ERR ID"));
-                    }
-                } else {
-                    alert("Invalid Hex ID");
-                }
-            }
-            function setKMeterId() {
-                const el = document.getElementById("k-meter-id-input");
-                const val = el.value;
-                if (val.match(/^[0-9A-Fa-f]+$/)) {
-                    log(`Set K-Meter ID: 0x${val}`);
-                    localStorage.setItem("kMeterIdVal", val);
-                    kMeterIdVal = val;
-                    // Send command to device
-                    if (rxChar) {
-                        const cmd = `KID=${val}`;
-                        rxChar.writeValue(new TextEncoder().encode(cmd))
-                            .catch(e => log("TX ERR KID"));
-                    }
-                } else {
-                    alert("Invalid Hex ID");
-                }
-            }
-            function setRxConfig() {
-                const idEl = document.getElementById("rx-monitor-id-input");
-                const idxEl = document.getElementById("rx-byte-index-input");
-                const modeEl = document.getElementById("rx-mode-select");
-                const statusEl = document.getElementById("rx-config-status");
-                const idVal = idEl.value.trim();
-                const idxVal = idxEl.value;
-                const modeVal = modeEl.value;
-                // Validation
-                if (!idVal.match(/^[0-9A-Fa-f]+$/)) {
-                    alert("Invalid Hex ID (例: 90, 1A3)");
-                    return;
-                }
-                // Save to localStorage
-                rxMonitorId = idVal;
-                rxByteIndex = idxVal;
-                rxMode = modeVal;
-                localStorage.setItem("rxMonitorId", rxMonitorId);
-                localStorage.setItem("rxByteIndex", rxByteIndex);
-                localStorage.setItem("rxMode", rxMode);
-                // BLE送信: 16進→10進に変換してPythonへ
-                const idDec = parseInt(idVal, 16);
-                const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`;
-                log("TX: " + cmd);
-                if (!rxChar) {
-                    // 未接続時はローカル保存のみ
-                    if (statusEl) statusEl.textContent = "✅ Saved locally (not connected)";
-                    if (statusEl) statusEl.style.color = "#ffc107";
-                    return;
-                }
-                rxChar.writeValue(new TextEncoder().encode(cmd))
-                    .then(() => {
-                        log("SET_RX sent OK: 0x" + idVal.toUpperCase());
-                        if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; }
-                    })
-                    .catch(e => {
-                        log("TX ERR SET_RX: " + e);
-                        if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; }
-                    });
-            }
-            /* --- Import / Export Logic --- */
-            function exportConfig() {
-                const config = {
-                    version: "6.0.0",
-                    timestamp: new Date().toISOString(),
-                    btnLabels: btnLabels,
-                    btnModes: btnModes,
-                    btnColors: btnColors,
-                    btnOnVals: btnOnVals,
-                    btnOffVals: btnOffVals,
-                    btnEndian: btnEndian,
-                    btnIcons: btnIcons,
-                    btnAuth: btnAuth, // Ver 4.0
-                    btnOnDelays: btnOnDelays, // Ver 4.4
-                    btnOffDelays: btnOffDelays, // Ver 4.4
-                    cfgVibe: cfgVibe,
-                    cfgSound: cfgSound,
-                    canId: canIdVal,
-                    kMeterId: kMeterIdVal,
-                    tempWarnVal: tempWarnVal // ★ NEW
-                };
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", "m5_can_config.json");
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-                log("Config Exported");
-            }
-            function importConfig() {
-                document.getElementById('import-file').click();
-            }
-            function handleFileSelect(input) {
-                const file = input.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    try {
-                        const config = JSON.parse(e.target.result);
-                        // Validation / Restoration
-                        if (config.btnLabels && Array.isArray(config.btnLabels)) {
-                            btnLabels = config.btnLabels;
-                            localStorage.setItem("btnLabels", JSON.stringify(btnLabels));
-                        }
-                        if (config.btnModes && Array.isArray(config.btnModes)) {
-                            btnModes = config.btnModes;
-                            localStorage.setItem("btnModes", JSON.stringify(btnModes));
-                        }
-                        if (config.btnColors && Array.isArray(config.btnColors)) {
-                            btnColors = config.btnColors;
-                            localStorage.setItem("btnColors", JSON.stringify(btnColors));
-                        }
-                        if (config.btnOnVals && Array.isArray(config.btnOnVals)) {
-                            btnOnVals = config.btnOnVals;
-                            localStorage.setItem("btnOnVals", JSON.stringify(btnOnVals));
-                        }
-                        if (config.btnOffVals && Array.isArray(config.btnOffVals)) {
-                            btnOffVals = config.btnOffVals;
-                            localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals));
-                        }
-                        if (config.btnEndian && Array.isArray(config.btnEndian)) {
-                            btnEndian = config.btnEndian;
-                            localStorage.setItem("btnEndian", JSON.stringify(btnEndian));
-                        }
-                        if (config.btnIcons && Array.isArray(config.btnIcons)) {
-                            btnIcons = config.btnIcons;
-                            localStorage.setItem("btnIcons", JSON.stringify(btnIcons));
-                        }
-                        if (config.btnAuth && Array.isArray(config.btnAuth)) { // Ver 4.0
-                            btnAuth = config.btnAuth;
-                            localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
-                        }
-                        if (config.cfgVibe !== undefined) {
-                            cfgVibe = config.cfgVibe;
-                            localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe));
-                        }
-                        if (config.cfgSound !== undefined) {
-                            cfgSound = config.cfgSound;
-                            localStorage.setItem("cfgSound", JSON.stringify(cfgSound));
-                        }
-                        if (config.canId) {
-                            document.getElementById("can-id-input").value = config.canId;
-                            canIdVal = config.canId; // Update global variable
-                            localStorage.setItem("canIdVal", canIdVal);
-                        }
-                        if (config.kMeterId) {
-                            const kInput = document.getElementById("k-meter-id-input");
-                            if (kInput) {
-                                kInput.value = config.kMeterId;
-                                kMeterIdVal = config.kMeterId;
-                                localStorage.setItem("kMeterIdVal", kMeterIdVal);
-                            }
-                        }
-                        // ★ NEW: Import Temp Warning
-                        if (config.tempWarnVal) {
-                            tempWarnVal = config.tempWarnVal;
-                            localStorage.setItem("tempWarnVal", tempWarnVal);
-                            const tInput = document.getElementById("temp-alarm-input");
-                            if (tInput) tInput.value = tempWarnVal;
-                        }
-                        // Ver 4.0 Handle missing auth array in old configs
-                        if (!btnAuth || !Array.isArray(btnAuth)) {
-                            btnAuth = Array(8).fill(false);
-                            localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
-                        }
-                        // Ver 4.6 Safety: If NO biometric credential exists on this device, FORCE UNLOCK all buttons
-                        if (!authCredentialId) {
-                            const hasLockedBtn = btnAuth.some(b => b === true);
-                            if (hasLockedBtn) {
-                                btnAuth = Array(8).fill(false);
-                                localStorage.setItem("btnAuth", JSON.stringify(btnAuth));
-                                log("Safety: Locks removed (No Credential)");
-                                alert("⚠️ Configuration Loaded, but Button Locks were disabled because no Biometric Registration was found on this device.");
-                            }
-                        }
-                        // Ver 4.4: Import Delay Arrays
-                        if (config.btnOnDelays && Array.isArray(config.btnOnDelays)) {
-                            btnOnDelays = config.btnOnDelays;
-                            localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
-                        }
-                        if (config.btnOffDelays && Array.isArray(config.btnOffDelays)) {
-                            btnOffDelays = config.btnOffDelays;
-                            localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
-                        }
-                        // Ver 4.4: Handle missing delay arrays
-                        if (!btnOnDelays || !Array.isArray(btnOnDelays)) {
-                            btnOnDelays = config.btnOnDelays || Array(8).fill(0);
-                            localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays));
-                        }
-                        if (!btnOffDelays || !Array.isArray(btnOffDelays)) {
-                            btnOffDelays = config.btnOffDelays || Array(8).fill(0);
-                            localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays));
-                        }
-                        log("Config Loaded");
-                        alert("Configuration Loaded Successfully");
-                        // Refresh UI
-                        renderConfigList();
-                        // Refresh Keypad Visuals (Colors/Labels/Icons)
-                        renderKeypadGrid();
-                    } catch (err) {
-                        log("Import Err: " + err);
-                        alert("Failed to load config: Invalid JSON");
-                    }
-                };
-                reader.readAsText(file);
-                // Reset input so same file can be selected again if needed
-                input.value = '';
-            }
-            /* Init Keypad */
-            function renderKeypadGrid() {
-                const container = document.getElementById("keypad");
-                container.innerHTML = "";
-                for (let i = 1; i <= 8; i++) {
-                    const b = document.createElement("div");
-                    b.id = `btn-${i}`;
-                    b.className = "key-btn";
-                    const iconKey = btnIcons[i - 1];
-                    let innerHTML = '';
-                    if (iconKey && iconKey !== 'none' && ICONS[iconKey]) {
-                        // Icon + Label
-                        innerHTML = `
-              <div style="width:50%; height:50%; margin-bottom:5px;">${ICONS[iconKey]}</div>
-              <span id="label-${i}" class="btn-label" style="font-size:0.9rem;">${btnLabels[i - 1]}</span>
-            `;
-                    } else {
-                        // Label Only
-                        innerHTML = `
-              <span id="label-${i}" class="btn-label">${btnLabels[i - 1]}</span>
-            `;
-                    }
-                    b.innerHTML = innerHTML;
-                    b.style.setProperty('--btn-color', btnColors[i - 1]);
-                    // Ver 4.5: Pointer Events for Long Press
-                    b.addEventListener('pointerdown', (e) => handlePointerDown(i, e));
-                    b.addEventListener('pointerup', (e) => handlePointerUp(i, e));
-                    b.addEventListener('pointerleave', (e) => handlePointerUp(i, e)); // Treat leave as cancel/up
-                    // Ver 4.7: Force suppress system context menu/vibration
-                    b.addEventListener('touchstart', (e) => {
-                        if (e.cancelable) e.preventDefault();
-                    }, { passive: false });
-                    b.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); return false; });
-                    container.appendChild(b);
-                }
-            }
-            // Global Context Menu Block (Fixed for Paste)
-            window.addEventListener('contextmenu', (e) => {
-                // Allow context menu for Inputs/Textareas
-                if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
-                    return true;
-                }
-                e.preventDefault();
-                return false;
-            }, { capture: true });
-            // Initial Render
-            renderConfigList();
-            renderKeypadGrid(); // Fixed from 5.0.1
-            // Init Status (Show Overlay)
-            updateStatus(false);
-            function updateMainSoundIcon() {
-                const btn = document.getElementById("main-sound-btn");
-                if (btn) {
-                    btn.innerHTML = cfgSound ? "🔊" : "🔇";
-                    btn.style.color = cfgSound ? "#0f0" : "#888";
-                }
-            }
-            function toggleSoundMain() {
-                setSound(!cfgSound);
-                updateMainSoundIcon();
-            }
-            // Update icon on load
-            updateMainSoundIcon();
-            /* =========================================
-               VOICE CONTROL ADD-ON (Ver 5.1.1 Fixed)
-               ========================================= */
-            const synth = window.speechSynthesis;
-            function speakVoice(text) {
-                if (synth.speaking) synth.cancel(); // Cancel previous speech
-                const utter = new SpeechSynthesisUtterance(text);
-                utter.lang = "ja-JP";
-                utter.rate = 1.2;
-                synth.speak(utter);
-            }
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let recognition = null;
-            let isListening = false;
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'ja-JP';
-                recognition.continuous = true;
-                recognition.interimResults = false;
-                recognition.onresult = (event) => {
-                    const last = event.results.length - 1;
-                    const transcript = event.results[last][0].transcript.trim();
-                    log("Voice: " + transcript);
-                    let matched = false;
-                    btnLabels.forEach((label, index) => {
-                        const cleanLabel = label.replace(/\s+/g, '');
-                        const cleanVoice = transcript.replace(/\s+/g, '');
-                        if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) {
-                            matched = true;
-                            handleVoiceCommand(index, transcript); // Pass transcript to check keywords
-                        }
-                    });
-                };
-                recognition.onend = () => {
-                    if (isListening) recognition.start();
-                    updateMicIcon();
-                };
-                recognition.onerror = (e) => {
-                    console.log("Voice Err:", e.error);
-                    if (e.error === 'not-allowed') {
-                        isListening = false;
-                        speakVoice("マイクの使用が許可されていません");
-                        updateMicIcon();
-                    } else if (e.error === 'network') {
-                        isListening = false;
-                        log("Voice: ネットワークエラー（音声認識にはインターネット接続が必要です）");
-                        speakVoice("ネットワークエラー");
-                        updateMicIcon();
-                    } else if (e.error === 'service-not-allowed' || e.error === 'audio-capture') {
-                        isListening = false;
-                        log("Voice: このデバイスでは音声認識が利用できません");
-                        speakVoice("音声認識を利用できません");
-                        updateMicIcon();
-                    } else if (e.error === 'no-speech') {
-                        // 無音は正常 → 再起動はonendに任せる（isListeningがtrueなら自動再起動）
-                        log("Voice: 音声なし（待機中...）");
-                    } else {
-                        log("Voice Err: " + e.error);
-                    }
-                };
-            }
-            function handleVoiceCommand(index, transcript) {
-                const btnNum = index + 1;
-                const currentState = btnStates[index];
-                const label = btnLabels[index];
-                const isLock = btnAuth[index];
-                // A. Check Lock
-                if (isLock) {
-                    speakVoice(label + "はロックされています。手動で操作してください。");
-                    return;
-                }
-                // B. Momentary
-                if (btnModes[index] === 'momentary') {
-                    executeAction(btnNum);
-                    speakVoice(label + "、実行");
-                    return;
-                }
-                // C. Toggle Logic with OFF Keyword Check
-                // Check for OFF keywords in the spoken text
-                const isOffCommand = transcript.includes("オフ") ||
-                    transcript.includes("停止") ||
-                    transcript.includes("切") ||
-                    transcript.toLowerCase().includes("off");
-                if (currentState) {
-                    // Currently ON
-                    if (isOffCommand) {
-                        // User wants OFF -> Turn OFF
-                        executeAction(btnNum);
-                        speakVoice(label + "をオフにしました");
-                    } else {
-                        // User didn't say OFF -> Assume ON attempt
-                        speakVoice(label + "は、既にオンです");
-                    }
-                } else {
-                    // Currently OFF
-                    if (isOffCommand) {
-                        // User wants OFF but it's already OFF
-                        speakVoice(label + "は、既にオフです");
-                    } else {
-                        // User wants ON (or neutral) -> Turn ON
-                        executeAction(btnNum);
-                        speakVoice(label + "をオンにしました");
-                    }
-                }
-            }
-            function injectMicButton() {
-                const headerGroup = document.querySelector('.main-header > div:last-child');
-                if (!headerGroup) return;
-                const micBtn = document.createElement('button');
-                micBtn.id = "mic-toggle-btn";
-                micBtn.className = "header-btn";
-                micBtn.innerHTML = "🎙️";
-                micBtn.style.fontSize = "1.2rem";
-                micBtn.onclick = toggleVoiceControl;
-                // Insert before Settings button
-                headerGroup.insertBefore(micBtn, headerGroup.firstChild);
-            }
-            function toggleVoiceControl() {
-                if (!recognition) {
-                    alert("このブラウザは音声認識に対応していません");
-                    return;
-                }
-                isListening = !isListening;
-                if (isListening) {
-                    recognition.start();
-                    speakVoice("音声操作、開始");
-                } else {
-                    recognition.stop();
-                    speakVoice("停止します");
-                }
-                updateMicIcon();
-            }
-            function updateMicIcon() {
-                const micBtn = document.getElementById("mic-toggle-btn");
-                if (!micBtn) return;
-                if (isListening) {
-                    micBtn.innerHTML = "🔴";
-                    micBtn.style.color = "#ff4444";
-                    micBtn.style.animation = "pulse-mic 1.5s infinite";
-                } else {
-                    micBtn.innerHTML = "🎙️";
-                    micBtn.style.color = "#aaa";
-                    micBtn.style.animation = "none";
-                }
-            }
-            // Init Mic Button
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', injectMicButton);
-            } else {
-                injectMicButton();
-            }
-        </script>
+        }
+        window.addEventListener('contextmenu', (e) => { if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) { return true; } e.preventDefault(); return false; }, { capture: true });
+        renderConfigList(); renderKeypadGrid(); updateStatus(false);
+        function updateMainSoundIcon() { const btn = document.getElementById("main-sound-btn"); if (btn) { btn.innerHTML = cfgSound ? "🔊" : "🔇"; btn.style.color = cfgSound ? "#0f0" : "#888"; } }
+        function toggleSoundMain() { setSound(!cfgSound); updateMainSoundIcon(); }
+        updateMainSoundIcon();
+        const synth = window.speechSynthesis;
+        function speakVoice(text) { if (synth.speaking) synth.cancel(); const utter = new SpeechSynthesisUtterance(text); utter.lang = "ja-JP"; utter.rate = 1.2; synth.speak(utter); }
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; let recognition = null; let isListening = false;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
+            recognition.onresult = (event) => { const last = event.results.length - 1; const transcript = event.results[last][0].transcript.trim(); log("Voice: " + transcript); btnLabels.forEach((label, index) => { const cleanLabel = label.replace(/\s+/g, ''); const cleanVoice = transcript.replace(/\s+/g, ''); if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) { handleVoiceCommand(index, transcript); } }); };
+            recognition.onend = () => { if (isListening) recognition.start(); updateMicIcon(); };
+            recognition.onerror = (e) => { console.log("Voice Err:", e.error); if (['not-allowed', 'network', 'service-not-allowed', 'audio-capture'].includes(e.error)) { isListening = false; speakVoice("音声認識エラー"); updateMicIcon(); } };
+        }
+        function handleVoiceCommand(index, transcript) { const btnNum = index + 1; const currentState = btnStates[index]; const label = btnLabels[index]; const isLock = btnAuth[index]; if (isLock) { speakVoice(label + "はロックされています。"); return; } if (btnModes[index] === 'momentary') { executeAction(btnNum); speakVoice(label + "、実行"); return; } const isOffCommand = transcript.includes("オフ") || transcript.includes("停止") || transcript.includes("切") || transcript.toLowerCase().includes("off"); if (currentState) { if (isOffCommand) { executeAction(btnNum); speakVoice(label + "をオフにしました"); } else { speakVoice(label + "は、既にオンです"); } } else { if (isOffCommand) { speakVoice(label + "は、既にオフです"); } else { executeAction(btnNum); speakVoice(label + "をオンにしました"); } } }
+        function injectMicButton() { const headerGroup = document.querySelector('.main-header > div:last-child'); if (!headerGroup) return; const micBtn = document.createElement('button'); micBtn.id = "mic-toggle-btn"; micBtn.className = "header-btn"; micBtn.innerHTML = "🎙️"; micBtn.style.fontSize = "1.2rem"; micBtn.onclick = toggleVoiceControl; headerGroup.insertBefore(micBtn, headerGroup.firstChild); }
+        function toggleVoiceControl() { if (!recognition) { alert("このブラウザは音声認識に対応していません"); return; } isListening = !isListening; if (isListening) { recognition.start(); speakVoice("音声操作、開始"); } else { recognition.stop(); speakVoice("停止します"); } updateMicIcon(); }
+        function updateMicIcon() { const micBtn = document.getElementById("mic-toggle-btn"); if (!micBtn) return; if (isListening) { micBtn.innerHTML = "🔴"; micBtn.style.color = "#ff4444"; micBtn.style.animation = "pulse-mic 1.5s infinite"; } else { micBtn.innerHTML = "🎙️"; micBtn.style.color = "#aaa"; micBtn.style.animation = "none"; } }
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', injectMicButton); } else { injectMicButton(); }
+    </script>
 </body>
 </html>
