@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v2.2 Mobile Fix)</title>
+    <title>M5Atom CAN Keypad (v2.4 KID Fix)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -230,7 +230,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 2.2 (Mobile Fix)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 2.4 (KID Fix & Compact)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -307,11 +307,11 @@
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">📡 RX Monitor Config</div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
-                        <label style="min-width:28px; font-size:0.75rem; color:#e67e22; padding-left:2px;">ID</label>
+                        <label style="min-width:18px; font-size:0.75rem; color:#e67e22; padding-left:2px;">ID</label>
                         <input type="text" id="rx-monitor-id-input" value="90" maxlength="3" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.8rem;">
                     </div>
                     <div class="id-input-group" style="flex:0.8; padding: 1px; gap: 1px;">
-                        <label style="min-width:20px; font-size:0.75rem; padding-left:2px;">Idx</label>
+                        <label style="min-width:18px; font-size:0.75rem; padding-left:2px;">Idx</label>
                         <input type="number" id="rx-byte-index-input" value="2" min="0" max="7" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.8rem;">
                     </div>
                     <div class="id-input-group" style="flex:1.2; padding: 1px; gap: 1px;">
@@ -324,17 +324,17 @@
                 </div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
-                        <label style="min-width:20px; font-size:0.75rem; padding-left:2px;">Mul</label>
+                        <label style="min-width:18px; font-size:0.75rem; padding-left:2px;">Mul</label>
                         <input type="number" id="rx-mul-input" value="1.0" step="0.01" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.8rem;">
                     </div>
                     <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
-                        <label style="min-width:20px; font-size:0.75rem; padding-left:2px;">Add</label>
+                        <label style="min-width:18px; font-size:0.75rem; padding-left:2px;">Add</label>
                         <input type="number" id="rx-add-input" value="0" step="1" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.8rem;">
                     </div>
                 </div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="flex:0.8; padding: 1px; gap: 1px;">
-                        <label style="min-width:20px; font-size:0.75rem; padding-left:2px;">Dec</label>
+                        <label style="min-width:18px; font-size:0.75rem; padding-left:2px;">Dec</label>
                         <select id="rx-dec-select" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; font-size:0.8rem;">
                             <option value="0">0</option>
                             <option value="1">0.0</option>
@@ -342,10 +342,11 @@
                         </select>
                     </div>
                     <div class="id-input-group" style="flex:1.2; padding: 1px; gap: 1px;">
-                        <label style="min-width:25px; font-size:0.75rem; padding-left:2px;">Unit</label>
+                        <label style="min-width:22px; font-size:0.75rem; padding-left:2px;">Unit</label>
                         <input type="text" id="rx-unit-input" placeholder="-" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-size:0.8rem;">
                     </div>
                 </div>
+                
                 <div class="live-preview-box" style="padding: 5px; margin-top: 5px; margin-bottom: 5px;">
                     <div style="font-size:0.7rem; color:#aaa;">Live Result (Preview)</div>
                     <div id="rx-live-val" class="live-val" style="font-size: 1.2rem;">---</div>
@@ -366,7 +367,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 2.1<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 2.4<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -715,8 +716,39 @@
         function handlePointerUp(n, e) { if (e) e.preventDefault(); const idx = n - 1; if (holdTimers[idx]) { clearTimeout(holdTimers[idx]); holdTimers[idx] = null; } const btnEl = document.getElementById(`btn-${n}`); if (btnEl) btnEl.classList.remove('pressing'); }
         function executeAction(n) { const idx = n - 1; const isMomentary = (btnModes[idx] === 'momentary'); if (isMomentary) { triggerPulse(n); } else { const newState = !btnStates[idx]; sendState(n, newState); } }
         function triggerPulse(n) { const idx = n - 1; sendState(n, true); setTimeout(() => { sendState(n, false); }, 150); lastPulseTimes[idx] = Date.now(); }
-        function setCanId() { const el = document.getElementById("can-id-input"); const val = el.value; if (val.match(/^[0-9A-Fa-f]+$/)) { log(`Set CAN ID: 0x${val}`); localStorage.setItem("canIdVal", val); canIdVal = val; if (rxChar) { const cmd = `ID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR ID")); } } else { alert("Invalid Hex ID"); } }
-        function setKMeterId() { const el = document.getElementById("k-meter-id-input"); const val = el.value; if (val.match(/^[0-9A-Fa-f]+$/)) { log(`Set K-Meter ID: 0x${val}`); localStorage.setItem("kMeterIdVal", val); kMeterIdVal = val; if (rxChar) { const cmd = `KID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR KID")); } } else { alert("Invalid Hex ID"); } }
+        
+        /* --- FIXED FUNCTION --- */
+        function setCanId() { 
+            const el = document.getElementById("can-id-input"); 
+            const val = el.value; 
+            if (val.match(/^[0-9A-Fa-f]+$/)) { 
+                log(`Set CAN ID: 0x${val}`); 
+                localStorage.setItem("canIdVal", val); 
+                canIdVal = val; 
+                if (rxChar) { 
+                    const cmd = `ID=${val}`; 
+                    rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR ID")); 
+                } 
+            } else { 
+                alert("Invalid Hex ID"); 
+            } 
+        }
+        
+        function setKMeterId() { 
+            const el = document.getElementById("k-meter-id-input"); 
+            const val = el.value; 
+            if (val.match(/^[0-9A-Fa-f]+$/)) { 
+                log(`Set K-Meter ID: 0x${val}`); 
+                localStorage.setItem("kMeterIdVal", val); 
+                kMeterIdVal = val; 
+                if (rxChar) { 
+                    const cmd = `KID=${val}`; 
+                    rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR KID")); 
+                } 
+            } else { 
+                alert("Invalid Hex ID"); 
+            } 
+        }
         
         function setRxConfig() {
             // Get from Inputs (Synced with globals)
