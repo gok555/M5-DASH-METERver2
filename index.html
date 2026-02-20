@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.6 Voice Nav)</title>
+    <title>M5Atom CAN Keypad (v3.7 Meter Exp)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -206,12 +206,36 @@
                 <div id="meter-val-2" class="meter-value val-yellow">---</div>
                 <div id="meter-unit-2" class="meter-unit">RAW</div>
             </div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
-            <div class="meter-cell"><div class="meter-value val-gray">--</div></div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 2</div>
+                <div id="meter-val-3" class="meter-value val-gray">---</div>
+                <div id="meter-unit-3" class="meter-unit"></div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 3</div>
+                <div id="meter-val-4" class="meter-value val-gray">---</div>
+                <div id="meter-unit-4" class="meter-unit"></div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 4</div>
+                <div id="meter-val-5" class="meter-value val-gray">---</div>
+                <div id="meter-unit-5" class="meter-unit"></div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 5</div>
+                <div id="meter-val-6" class="meter-value val-gray">---</div>
+                <div id="meter-unit-6" class="meter-unit"></div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 6</div>
+                <div id="meter-val-7" class="meter-value val-gray">---</div>
+                <div id="meter-unit-7" class="meter-unit"></div>
+            </div>
+            <div class="meter-cell">
+                <div class="meter-label">RX Mon 7</div>
+                <div id="meter-val-8" class="meter-value val-gray">---</div>
+                <div id="meter-unit-8" class="meter-unit"></div>
+            </div>
         </div>
     </div>
     <div id="view-main" class="view-container active">
@@ -230,7 +254,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.6 (Voice Nav)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.7 (Meter Exp)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -398,7 +422,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.6<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.7<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -707,79 +731,115 @@
             } catch (e) { log("Err: " + e); updateStatus(false); }
         }
         function disconnect() { if (device && device.gatt.connected) { device.gatt.disconnect(); updateStatus(false); } }
+        
+        // ★ Common Helper for Updating Meter Values (Color, Alarm, etc.)
+        function updateMeterValue(elId, unitId, rawVal, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, labelForVoice) {
+            // Signed Logic
+            let signedVal = rawVal;
+            if (rxMode == 3) { if (signedVal & 0x80) signedVal -= 0x100; }
+            else if (rxMode == 4 || rxMode == 5) { if (signedVal & 0x8000) signedVal -= 0x10000; }
+
+            const calcVal = (signedVal * rxMul) + rxAdd;
+            const dispVal = calcVal.toFixed(rxDec);
+
+            const el = document.getElementById(elId);
+            const unitEl = document.getElementById(unitId);
+            
+            if (el) {
+                el.textContent = dispVal;
+                let isAlarm = false;
+                if (rxWarnVal !== null && !isNaN(rxWarnVal)) {
+                    if (rxAlarmMode === 'low') { if (calcVal <= rxWarnVal) isAlarm = true; }
+                    else { if (calcVal >= rxWarnVal) isAlarm = true; }
+                }
+                
+                if (isAlarm) {
+                    el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FF0000", 100);
+                    el.classList.add("temp-warning");
+                    el.classList.remove("val-yellow");
+                    el.classList.remove("val-gray");
+                    el.classList.add("val-red");
+                    
+                    // Throttle voice to avoid spamming
+                    if (Date.now() - lastRxWarnTime > 5000) {
+                        speakVoice(labelForVoice + "、警告！");
+                        lastRxWarnTime = Date.now();
+                    }
+                } else {
+                    el.style.color = "#FFF"; setTimeout(() => el.style.color = rxColor, 100);
+                    el.classList.remove("temp-warning");
+                    el.classList.remove("val-red");
+                    el.classList.remove("val-gray");
+                    // Use User's Color
+                    el.style.textShadow = `0 0 10px ${rxColor}66`;
+                }
+            }
+            if (unitEl) unitEl.textContent = rxUnit;
+            return { disp: dispVal, raw: rawVal };
+        }
+
         function handleNotifications(event) {
             const decoder = new TextDecoder('utf-8'); const cmd = decoder.decode(event.target.value); const cleanedCmd = cmd.replace(/(\r\n|\n|\r)/gm, "").trim(); log("RX: " + cleanedCmd); resetWatchdog();
+            
+            // --- ID Sync ---
             if (cleanedCmd.startsWith("ID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync ID: " + val); canIdVal = val; localStorage.setItem("canIdVal", canIdVal); const el = document.getElementById("can-id-input"); if (el) el.value = canIdVal; }
             else if (cleanedCmd.startsWith("KID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync KID: " + val); kMeterIdVal = val; localStorage.setItem("kMeterIdVal", kMeterIdVal); const el = document.getElementById("k-meter-id-input"); if (el) el.value = kMeterIdVal; }
+            
+            // --- Main RX Monitor (Slot 2) ---
             else if (cleanedCmd.startsWith("VAL=")) {
-                // ★ Modified for Calc & Signed Logic
                 let rawVal = parseInt(cleanedCmd.split("=")[1]);
-                const unsignedRaw = rawVal; // Keep original for Hex display
+                const res = updateMeterValue("meter-val-2", "meter-unit-2", rawVal, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, rxLabel);
                 
-                // ★ Handle Signed Conversion (Locally)
-                if (rxMode == 3) { // 1B Signed
-                    if (rawVal & 0x80) rawVal -= 0x100;
-                } else if (rxMode == 4 || rxMode == 5) { // 2B Signed (LE/BE handled by device order, just fix sign here)
-                    if (rawVal & 0x8000) rawVal -= 0x10000;
-                }
-
-                const calcVal = (rawVal * rxMul) + rxAdd;
-                const dispVal = calcVal.toFixed(rxDec);
-
-                const el = document.getElementById("meter-val-2");
-                const unitEl = document.getElementById("meter-unit-2");
-                if (el) {
-                    el.textContent = dispVal;
-                    // ★ Modified: Use rxColor or Flash Red if Alarm
-                    let isAlarm = false;
-                    if (rxWarnVal !== null && !isNaN(rxWarnVal)) {
-                        if (rxAlarmMode === 'low') { if (calcVal <= rxWarnVal) isAlarm = true; }
-                        else { if (calcVal >= rxWarnVal) isAlarm = true; }
-                    }
-                    
-                    if (isAlarm) {
-                        el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FF0000", 100); // Alarm Flash
-                        el.classList.add("temp-warning");
-                        el.classList.remove("val-yellow");
-                        el.classList.add("val-red");
-                        
-                        if (Date.now() - lastRxWarnTime > 5000) {
-                            speakVoice(rxLabel + "、警告！");
-                            lastRxWarnTime = Date.now();
-                        }
-                    } else {
-                        // Normal Color (User Setting)
-                        el.style.color = "#FFF"; setTimeout(() => el.style.color = rxColor, 100);
-                        el.classList.remove("temp-warning");
-                        el.classList.remove("val-red");
-                        // Overwrite CSS class color
-                        el.style.textShadow = `0 0 10px ${rxColor}66`; // Add glow
-                    }
-                }
-                if (unitEl) unitEl.textContent = rxUnit;
-                
+                // Update Live Preview
                 const liveValEl = document.getElementById("rx-live-val");
                 const liveRawEl = document.getElementById("rx-live-raw");
                 if (liveValEl) {
-                    liveValEl.textContent = dispVal + " " + rxUnit;
-                    // ★ RESTORED HEX DISPLAY
-                    liveRawEl.textContent = `Raw: ${rawVal} (0x${unsignedRaw.toString(16).toUpperCase()})`;
+                    liveValEl.textContent = res.disp + " " + rxUnit;
+                    liveRawEl.textContent = `Raw: ${rawVal} (0x${rawVal.toString(16).toUpperCase()})`;
                 }
             }
+            // --- Additional RX Monitors (Slots 3-8) ---
+            // ★ Added parsing for VAL2...VAL7. 
+            // Note: Since we don't have unique settings for each slot yet (due to "don't touch other parts"), 
+            // they share the same Mul/Add/Alarm/Color config as the main monitor for now.
+            else if (cleanedCmd.startsWith("VAL2=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-3", "meter-unit-3", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター2");
+            }
+            else if (cleanedCmd.startsWith("VAL3=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-4", "meter-unit-4", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター3");
+            }
+            else if (cleanedCmd.startsWith("VAL4=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-5", "meter-unit-5", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター4");
+            }
+            else if (cleanedCmd.startsWith("VAL5=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-6", "meter-unit-6", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター5");
+            }
+            else if (cleanedCmd.startsWith("VAL6=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-7", "meter-unit-7", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター6");
+            }
+            else if (cleanedCmd.startsWith("VAL7=")) {
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                updateMeterValue("meter-val-8", "meter-unit-8", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター7");
+            }
+
+            // --- Exhaust Temp (Slot 1) ---
             else if (cleanedCmd.startsWith("TEMP=")) {
                 const val = cleanedCmd.split("=")[1]; const el = document.getElementById("meter-val-1");
                 if (el) {
                     el.textContent = val; let tempVal = parseInt(val);
-                    // ★ Modified: Use tempColor logic
                     let isAlarm = (!isNaN(tempVal) && tempVal >= tempWarnVal);
-                    
                     if (isAlarm) { 
                         el.classList.add("temp-warning"); el.classList.remove("val-cyan"); el.classList.add("val-red");
                         el.style.color = "#FF0000";
                         if (Date.now() - lastTempWarnTime > 5000) { speakVoice("排気温度、警告！"); lastTempWarnTime = Date.now(); } 
                     } else { 
                         el.classList.remove("temp-warning"); el.classList.remove("val-red");
-                        el.style.color = tempColor; // Use Custom Color
+                        el.style.color = tempColor;
                         el.style.textShadow = `0 0 10px ${tempColor}66`;
                     }
                 }
@@ -902,7 +962,7 @@
         }
         function exportConfig() {
             const config = { version: "8.1.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, tempColor: tempColor, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal, rxColor: rxColor, rxAlarmMode: rxAlarmMode };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_6.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_7.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
         }
         function importConfig() { document.getElementById('import-file').click(); }
         function handleFileSelect(input) {
@@ -969,7 +1029,6 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
             recognition.onresult = (event) => { const last = event.results.length - 1; const transcript = event.results[last][0].transcript.trim(); log("Voice: " + transcript); 
-                // ★ Voice Navigation Logic Added Here
                 if (transcript.includes("キーパッド") || transcript.includes("キーパット")) {
                      showMain();
                      speakVoice("キーパッドを表示");
