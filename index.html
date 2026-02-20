@@ -343,7 +343,7 @@
                     <div style="flex:1.4;"></div>
                 </div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
-                    <div class="id-input-group" style="flex:0.8; padding: 1px; gap: 1px;">
+                    <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
                         <label style="min-width:18px; font-size:0.75rem; padding-left:2px;">Dec</label>
                         <select id="rx-dec-select" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; font-size:0.8rem;">
                             <option value="0">0</option>
@@ -358,9 +358,11 @@
                         <label style="min-width:22px; font-size:0.75rem; padding-left:2px;">Unit</label>
                         <input type="text" id="rx-unit-input" placeholder="-" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-size:0.8rem;">
                     </div>
-                    <div class="id-input-group" style="flex:0.8; padding: 1px; gap: 1px; border:1px solid #d35400;">
-                        <label style="min-width:15px; font-size:0.75rem; padding-left:2px; color:#e67e22;">Alm</label>
-                        <input type="number" id="rx-alarm-input" placeholder="Off" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.75rem;">
+                </div>
+                <div style="display:flex; gap:2px; margin-bottom:4px;">
+                    <div class="id-input-group" style="width: 100%; padding: 1px; gap: 1px; border:1px solid #d35400;">
+                        <label style="min-width:60px; font-size:0.75rem; padding-left:5px; color:#e67e22;">Alarm Val</label>
+                        <input type="number" id="rx-alarm-input" placeholder="Off (Empty)" style="flex:1; background:#222; border:1px solid #555; color:white; padding:8px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.9rem;">
                     </div>
                 </div>
                 
@@ -921,4 +923,3 @@
     </script>
 </body>
 </html>
-}
