@@ -406,11 +406,8 @@
         /* --- Meter View --- */
         #view-meter {
             background: #000;
-            display: flex;
-            /* Changed from default block/flex centering to handle grid */
             flex-direction: column;
             padding-top: 50px;
-            /* Space for back button */
             box-sizing: border-box;
         }
         #meter-grid {
@@ -637,30 +634,37 @@
                 <div id="config-list-container" class="config-list">
                 </div>
             </div>
-            <!-- Generic Monitor Config (Moved Inside Settings) -->
+            <!-- Generic Monitor Config (RX Monitor) - FIXED v2 -->
             <div class="control-row" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 10px;">
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Generic Monitor Config</div>
-                <div class="config-row">
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="font-size:0.7rem; color:#aaa;">ID (Hex)</span>
-                        <input type="text" id="rx-monitor-id-input" value="90" class="config-input" maxlength="3"
-                            style="width:60px;">
+                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 8px;">📡 RX Monitor Config</div>
+                <div class="id-input-group" style="margin-bottom:6px; border:1px solid #e67e22;">
+                    <label style="min-width:60px; color:#e67e22;">RX:0x</label>
+                    <input type="text" id="rx-monitor-id-input" value="90" maxlength="3"
+                        style="flex:1; background:#222; border:1px solid #555; color:white;
+                               padding:12px; border-radius:4px; text-align:center;
+                               font-family:monospace; font-size:1.2rem; min-width:70px;">
+                </div>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <div class="id-input-group" style="flex:1;">
+                        <label style="min-width:50px; font-size:0.85rem;">Byte#</label>
+                        <input type="number" id="rx-byte-index-input" value="2" min="0" max="7"
+                            style="flex:1; background:#222; border:1px solid #555; color:white;
+                                   padding:10px; border-radius:4px; text-align:center;
+                                   font-family:monospace; font-size:1rem; min-width:50px;">
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="font-size:0.7rem; color:#aaa;">Index</span>
-                        <input type="number" id="rx-byte-index-input" value="2" class="config-input" min="0" max="7"
-                            style="width:50px;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="font-size:0.7rem; color:#aaa;">Mode</span>
-                        <select id="rx-mode-select" class="config-input" style="width:80px;">
-                            <option value="0">8-bit</option>
-                            <option value="1" selected>16-bit LE</option>
-                            <option value="2">16-bit BE</option>
+                    <div class="id-input-group" style="flex:1.5;">
+                        <label style="min-width:45px; font-size:0.85rem;">Mode</label>
+                        <select id="rx-mode-select"
+                            style="flex:1; background:#222; border:1px solid #555; color:white;
+                                   padding:10px; border-radius:4px; font-size:0.9rem;">
+                            <option value="0">1Byte</option>
+                            <option value="1" selected>2B LE</option>
+                            <option value="2">2B BE</option>
                         </select>
                     </div>
-                    <button class="action-btn" onclick="setRxConfig()">SET</button>
                 </div>
+                <button class="action-btn btn-orange" onclick="setRxConfig()">SET RX Monitor</button>
+                <div id="rx-config-status" style="font-size:0.75rem; color:#888; margin-top:4px; text-align:right;"></div>
             </div>
             <div class="control-row" style="margin-top: 10px;">
                 <button class="action-btn btn-gray" onclick="toggleFullscreen()">⛶ Toggle Fullscreen</button>
@@ -1220,14 +1224,6 @@
                 }
             }
             /* --- Navigation --- */
-            /* --- Navigation --- */
-            function showSettings() {
-                renderConfigList();
-                updateFeedbackUI();
-                document.getElementById("view-main").classList.remove("active");
-                document.getElementById("view-meter").classList.remove("active");
-                document.getElementById("view-settings").classList.add("active");
-            }
             function showMain() {
                 // Force Hide Others
                 document.getElementById("view-settings").style.display = "none";
@@ -1251,6 +1247,8 @@
                 v.classList.add("active");
             }
             function showSettings() {
+                renderConfigList();
+                updateFeedbackUI();
                 // Force Hide Others
                 document.getElementById("view-main").style.display = "none";
                 document.getElementById("view-meter").style.display = "none";
@@ -1436,7 +1434,7 @@
                             el.classList.remove("val-cyan");
                             el.classList.add("val-red");
                             if (Date.now() - lastTempWarnTime > 5000) {
-                                playVoice("warning-temp");
+                                speakVoice("排気温度、警告！");
                                 lastTempWarnTime = Date.now();
                             }
                         } else {
@@ -1470,7 +1468,14 @@
                             updateBtnVisual(i + 1, btnStates[i]);
                         }
                     }
-                } else if (cleanedCmd.startsWith("STATUS=")) {
+                } else if (cleanedCmd.startsWith("RXID=")) {
+                    // Python側からのRXID確認応答
+                    const val = cleanedCmd.split("=")[1];
+                    log("✅ RX ID confirmed by device: " + val);
+                    const statusEl = document.getElementById("rx-config-status");
+                    if (statusEl) { statusEl.textContent = "✅ Device confirmed: " + val; statusEl.style.color = "#51cf66"; }
+                }
+                else if (cleanedCmd.startsWith("STATUS=")) {
                     const st = cleanedCmd.substring(7);
                     updateCanStatus(st);
                 }
@@ -1625,30 +1630,41 @@
                 const idEl = document.getElementById("rx-monitor-id-input");
                 const idxEl = document.getElementById("rx-byte-index-input");
                 const modeEl = document.getElementById("rx-mode-select");
-                const idVal = idEl.value;
+                const statusEl = document.getElementById("rx-config-status");
+                const idVal = idEl.value.trim();
                 const idxVal = idxEl.value;
                 const modeVal = modeEl.value;
                 // Validation
                 if (!idVal.match(/^[0-9A-Fa-f]+$/)) {
-                    alert("Invalid Hex ID");
+                    alert("Invalid Hex ID (例: 90, 1A3)");
                     return;
                 }
-                // Save
+                // Save to localStorage
                 rxMonitorId = idVal;
                 rxByteIndex = idxVal;
                 rxMode = modeVal;
                 localStorage.setItem("rxMonitorId", rxMonitorId);
                 localStorage.setItem("rxByteIndex", rxByteIndex);
                 localStorage.setItem("rxMode", rxMode);
-                // Send: SET_RX=ID(Dec),IDX,MODE
-                // Convert Hex ID to Decimal for firmware
+                // BLE送信: 16進→10進に変換してPythonへ
                 const idDec = parseInt(idVal, 16);
                 const cmd = `SET_RX=${idDec},${idxVal},${modeVal}`;
                 log("TX: " + cmd);
-                if (rxChar) {
-                    rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .catch(e => log("TX ERR SET_RX"));
+                if (!rxChar) {
+                    // 未接続時はローカル保存のみ
+                    if (statusEl) statusEl.textContent = "✅ Saved locally (not connected)";
+                    if (statusEl) statusEl.style.color = "#ffc107";
+                    return;
                 }
+                rxChar.writeValue(new TextEncoder().encode(cmd))
+                    .then(() => {
+                        log("SET_RX sent OK: 0x" + idVal.toUpperCase());
+                        if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; }
+                    })
+                    .catch(e => {
+                        log("TX ERR SET_RX: " + e);
+                        if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; }
+                    });
             }
             /* --- Import / Export Logic --- */
             function exportConfig() {
@@ -1862,21 +1878,6 @@
             }
             // Update icon on load
             updateMainSoundIcon();
-            async function handleStartConnect() {
-                try {
-                    // 1. Request Fullscreen (Priority: User Gesture)
-                    enterFullscreen();
-                    // 2. Init Audio Context (User Gesture)
-                    initAudio();
-                    // 2. Connect Bluetooth
-                    await connect();
-                    // 3. Keep Awake (WakeLock)
-                    requestWakeLock();
-                } catch (e) {
-                    console.error("Start Connect Error:", e);
-                    log("Err: " + e);
-                }
-            }
             /* =========================================
                VOICE CONTROL ADD-ON (Ver 5.1.1 Fixed)
                ========================================= */
@@ -1920,6 +1921,21 @@
                         isListening = false;
                         speakVoice("マイクの使用が許可されていません");
                         updateMicIcon();
+                    } else if (e.error === 'network') {
+                        isListening = false;
+                        log("Voice: ネットワークエラー（音声認識にはインターネット接続が必要です）");
+                        speakVoice("ネットワークエラー");
+                        updateMicIcon();
+                    } else if (e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+                        isListening = false;
+                        log("Voice: このデバイスでは音声認識が利用できません");
+                        speakVoice("音声認識を利用できません");
+                        updateMicIcon();
+                    } else if (e.error === 'no-speech') {
+                        // 無音は正常 → 再起動はonendに任せる（isListeningがtrueなら自動再起動）
+                        log("Voice: 音声なし（待機中...）");
+                    } else {
+                        log("Voice Err: " + e.error);
                     }
                 };
             }
