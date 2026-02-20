@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.0 UI & Hex Fix)</title>
+    <title>M5Atom CAN Keypad (v3.1 RX Alarm)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -230,7 +230,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.0 (UI & Hex Fix)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.1 (RX Alarm)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -340,7 +340,10 @@
                         <label style="min-width:15px; font-size:0.75rem; padding-left:2px;">Add</label>
                         <input type="number" id="rx-add-input" value="0" step="1" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.75rem;">
                     </div>
-                    <div style="flex:1;"></div>
+                    <div class="id-input-group" style="flex:0.7; padding: 1px; gap: 1px; border:1px solid #d35400;">
+                        <label style="min-width:15px; font-size:0.75rem; padding-left:2px; color:#e67e22;">Alm</label>
+                        <input type="number" id="rx-alarm-input" placeholder="Off" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.75rem;">
+                    </div>
                 </div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="flex:0.8; padding: 1px; gap: 1px;">
@@ -380,7 +383,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.0<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.1<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -408,7 +411,7 @@
             music: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>',
             fan: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 11c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 2c0-3.31-2.69-6-6-6s-6 2.69-6 6c0 2.22 1.21 4.15 3 5.19V14.2c-1.21-.63-2-2.16-2-3.2 0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.79 2.57-2 3.2v3.99c1.79-1.04 3-2.97 3-5.19z"/></svg>',
             hazard: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
-            setting: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>',
+            setting: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>',
             engine: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>',
             rain: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 9c0-.8.7-1.5 1.5-1.5S7.5 8.2 7.5 9s-.7 1.5-1.5 1.5S4.5 9.8 4.5 9zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 6c0-.8.7-1.5 1.5-1.5S7.5 14.2 7.5 15s-.7 1.5-1.5 1.5S4.5 15.8 4.5 15zm12 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5zm-6 0c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5-.7 1.5-1.5 1.5-1.5-.8-1.5-1.5z"/></svg>',
             menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
@@ -445,6 +448,9 @@
         let rxAdd = parseFloat(localStorage.getItem("rxAdd")) || 0;
         let rxDec = parseInt(localStorage.getItem("rxDec")) || 0;
         let rxUnit = localStorage.getItem("rxUnit") || "";
+        // ★ NEW: Alarm
+        let rxWarnVal = parseFloat(localStorage.getItem("rxWarnVal")); // Can be null
+        let lastRxWarnTime = 0;
 
         let audioCtx = null;
         let btnColors = JSON.parse(localStorage.getItem("btnColors")) || Array(8).fill('#00FF00');
@@ -481,6 +487,9 @@
             const rAdd = document.getElementById("rx-add-input"); if(rAdd) rAdd.value = rxAdd;
             const rDec = document.getElementById("rx-dec-select"); if(rDec) rDec.value = rxDec;
             const rUnit = document.getElementById("rx-unit-input"); if(rUnit) rUnit.value = rxUnit;
+            const rAlm = document.getElementById("rx-alarm-input");
+            if(rAlm && !isNaN(rxWarnVal) && rxWarnVal !== null) rAlm.value = rxWarnVal;
+
             // Restore Label
             const rLbl = document.getElementById("rx-label-input"); 
             if(rLbl) rLbl.value = rxLabel;
@@ -694,6 +703,22 @@
                 if (el) {
                     el.textContent = dispVal;
                     el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FFD700", 100);
+                    
+                    // ★ RX Alarm Logic
+                    if (rxWarnVal !== null && !isNaN(rxWarnVal) && calcVal >= rxWarnVal) {
+                        el.classList.add("temp-warning");
+                        el.classList.remove("val-yellow");
+                        el.classList.add("val-red");
+                        
+                        if (Date.now() - lastRxWarnTime > 5000) {
+                            speakVoice(rxLabel + "、警告！");
+                            lastRxWarnTime = Date.now();
+                        }
+                    } else {
+                        el.classList.remove("temp-warning");
+                        el.classList.remove("val-red");
+                        el.classList.add("val-yellow");
+                    }
                 }
                 if (unitEl) unitEl.textContent = rxUnit;
                 
@@ -792,16 +817,20 @@
             const decVal = parseInt(document.getElementById("rx-dec-select").value) || 0;
             const unitVal = document.getElementById("rx-unit-input").value || "";
             const lblVal = document.getElementById("rx-label-input").value || "RX Monitor";
+            const almVal = parseFloat(document.getElementById("rx-alarm-input").value);
 
             if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID (例: 90, 1A3)"); return; }
             
             rxMonitorId = idVal; rxByteIndex = idxVal; rxMode = modeVal;
             rxMul = mulVal; rxAdd = addVal; rxDec = decVal; rxUnit = unitVal;
             rxLabel = lblVal;
+            rxWarnVal = isNaN(almVal) ? null : almVal;
             
             localStorage.setItem("rxMonitorId", rxMonitorId); localStorage.setItem("rxByteIndex", rxByteIndex); localStorage.setItem("rxMode", rxMode);
             localStorage.setItem("rxMul", rxMul); localStorage.setItem("rxAdd", rxAdd); localStorage.setItem("rxDec", rxDec); localStorage.setItem("rxUnit", rxUnit);
             localStorage.setItem("rxLabel", rxLabel);
+            if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal);
+            else localStorage.removeItem("rxWarnVal");
             
             const mLabel = document.getElementById("meter-label-2");
             if(mLabel) mLabel.textContent = rxLabel;
@@ -817,7 +846,7 @@
             rxChar.writeValue(new TextEncoder().encode(cmd)).then(() => { log("SET_RX sent OK: 0x" + idVal.toUpperCase()); if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; } }).catch(e => { log("TX ERR SET_RX: " + e); if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; } });
         }
         function exportConfig() {
-            const config = { version: "8.0.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel };
+            const config = { version: "8.0.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
         }
         function importConfig() { document.getElementById('import-file').click(); }
@@ -850,6 +879,7 @@
                     if (config.rxDec !== undefined) { rxDec = config.rxDec; localStorage.setItem("rxDec", rxDec); }
                     if (config.rxUnit !== undefined) { rxUnit = config.rxUnit; localStorage.setItem("rxUnit", rxUnit); }
                     if (config.rxLabel !== undefined) { rxLabel = config.rxLabel; localStorage.setItem("rxLabel", rxLabel); }
+                    if (config.rxWarnVal !== undefined) { rxWarnVal = config.rxWarnVal; if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal); }
                     
                     if (!authCredentialId) { if (btnAuth.some(b => b === true)) { btnAuth = Array(8).fill(false); localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); alert("Safety: Locks disabled (No Credential)"); } }
                     log("Config Loaded"); alert("Configuration Loaded Successfully"); renderConfigList(); renderKeypadGrid();
