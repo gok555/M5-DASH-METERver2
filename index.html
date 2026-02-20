@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.5 Input Fix Final)</title>
+    <title>M5Atom CAN Keypad (v3.6 Voice Nav)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -230,7 +230,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.5 (Input Fix Final)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.6 (Voice Nav)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -398,7 +398,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.5<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.6<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -902,7 +902,7 @@
         }
         function exportConfig() {
             const config = { version: "8.1.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, tempColor: tempColor, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal, rxColor: rxColor, rxAlarmMode: rxAlarmMode };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_5.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_6.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
         }
         function importConfig() { document.getElementById('import-file').click(); }
         function handleFileSelect(input) {
@@ -968,7 +968,20 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; let recognition = null; let isListening = false;
         if (SpeechRecognition) {
             recognition = new SpeechRecognition(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
-            recognition.onresult = (event) => { const last = event.results.length - 1; const transcript = event.results[last][0].transcript.trim(); log("Voice: " + transcript); btnLabels.forEach((label, index) => { const cleanLabel = label.replace(/\s+/g, ''); const cleanVoice = transcript.replace(/\s+/g, ''); if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) { handleVoiceCommand(index, transcript); } }); };
+            recognition.onresult = (event) => { const last = event.results.length - 1; const transcript = event.results[last][0].transcript.trim(); log("Voice: " + transcript); 
+                // ★ Voice Navigation Logic Added Here
+                if (transcript.includes("キーパッド") || transcript.includes("キーパット")) {
+                     showMain();
+                     speakVoice("キーパッドを表示");
+                     return;
+                }
+                if (transcript.includes("ダッシュメーター") || transcript.includes("メーター")) {
+                     showMeter();
+                     speakVoice("ダッシュメーターを表示");
+                     return;
+                }
+                btnLabels.forEach((label, index) => { const cleanLabel = label.replace(/\s+/g, ''); const cleanVoice = transcript.replace(/\s+/g, ''); if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) { handleVoiceCommand(index, transcript); } }); 
+            };
             recognition.onend = () => { if (isListening) recognition.start(); updateMicIcon(); };
             recognition.onerror = (e) => { console.log("Voice Err:", e.error); if (['not-allowed', 'network', 'service-not-allowed', 'audio-capture'].includes(e.error)) { isListening = false; speakVoice("音声認識エラー"); updateMicIcon(); } };
         }
