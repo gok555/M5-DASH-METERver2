@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.8 Multi-Meter)</title>
+    <title>M5Atom CAN Keypad (v3.8 Final)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -254,7 +254,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.8 (Meter Fix)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.8 (Multi-Meter)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -407,7 +407,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.8 (Fix)<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.8 (Final)<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -551,7 +551,7 @@
         function setRxConfig() {
             const cfg = rxConfigs[currentRxSlot];
             
-            // Get values from UI
+            // UIから値を取得
             const idVal = document.getElementById("rx-monitor-id-input").value.trim();
             if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID"); return; }
             
@@ -568,36 +568,43 @@
             const wVal = parseFloat(document.getElementById("rx-alarm-input").value);
             cfg.warnVal = isNaN(wVal) ? null : wVal;
 
-            // Save to Array & LocalStorage
+            // 保存
             localStorage.setItem("rxConfigs", JSON.stringify(rxConfigs));
             updateLabelsOnMeterView();
             
             const statusEl = document.getElementById("rx-config-status");
             
-            // For Slot 0 (Main Monitor), we send SET_RX command to device for legacy support if needed,
-            // or we could potentially send specific commands for other slots if firmware supports it.
-            // CURRENTLY: Only Slot 0 sends "SET_RX" to device because standard firmware only listens to one configurable RX.
-            // If firmware is standard, only Slot 0 is fully "hardware filtered". Others rely on software filtering in JS if device sends all CAN.
-            // BUT assuming device sends VAL, VAL2... etc based on hardcoded or generic sniffing.
-            // For this V3.8, we only send SET_RX for Slot 0 as per V3.7 behavior.
-            
-            if (currentRxSlot === 0) {
-                let devMode = cfg.mode;
-                if (cfg.mode == 3) devMode = 0; 
-                if (cfg.mode == 4) devMode = 1; 
-                if (cfg.mode == 5) devMode = 2; 
+            // --- 全スロットでコマンド送信 (デバイス側V3.8対応) ---
+            let devMode = cfg.mode;
+            if (cfg.mode == 3) devMode = 0; 
+            if (cfg.mode == 4) devMode = 1; 
+            if (cfg.mode == 5) devMode = 2; 
 
-                const idDec = parseInt(cfg.id, 16); 
-                const cmd = `SET_RX=${idDec},${cfg.idx},${devMode}`; 
-                if (rxChar) {
-                    rxChar.writeValue(new TextEncoder().encode(cmd))
-                        .then(() => { if (statusEl) { statusEl.textContent = "📡 Sent to Device (Slot 1)"; statusEl.style.color = "#74c0fc"; } })
-                        .catch(e => { if (statusEl) { statusEl.textContent = "❌ Send failed"; statusEl.style.color = "#ff6b6b"; } });
-                } else {
-                    if (statusEl) { statusEl.textContent = "✅ Saved locally (Not Connected)"; statusEl.style.color = "#ffc107"; }
-                }
+            const idDec = parseInt(cfg.id, 16); 
+            // コマンド形式: SET_RX=slotIndex,canID(dec),byteIndex,mode
+            const cmd = `SET_RX=${currentRxSlot},${idDec},${cfg.idx},${devMode}`; 
+            
+            log("TX Config: " + cmd); 
+
+            if (rxChar) {
+                rxChar.writeValue(new TextEncoder().encode(cmd))
+                    .then(() => { 
+                        if (statusEl) { 
+                            statusEl.textContent = `📡 Sent Slot ${currentRxSlot+1} Config!`; 
+                            statusEl.style.color = "#74c0fc"; 
+                        } 
+                    })
+                    .catch(e => { 
+                        if (statusEl) { 
+                            statusEl.textContent = "❌ Send failed"; 
+                            statusEl.style.color = "#ff6b6b"; 
+                        } 
+                    });
             } else {
-                 if (statusEl) { statusEl.textContent = `✅ Saved locally (Slot ${currentRxSlot+1})`; statusEl.style.color = "#51cf66"; }
+                if (statusEl) { 
+                    statusEl.textContent = `✅ Saved locally (Not Connected)`; 
+                    statusEl.style.color = "#ffc107"; 
+                }
             }
         }
 
