@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.7 Meter Exp)</title>
+    <title>M5Atom CAN Keypad (v3.8 Multi-Meter)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -145,7 +145,7 @@
             background: rgba(0, 0, 0, 0.6); z-index: 5; justify-content: center;
             align-items: center; color: #00ff00; font-weight: bold; font-size: 1.2rem;
         }
-        /* Live Preview Box Style (NEW) */
+        /* Live Preview Box Style */
         .live-preview-box {
             background: #111; border: 1px solid #444; border-radius: 6px; padding: 10px;
             margin-top: 10px; margin-bottom: 10px; text-align: center;
@@ -207,32 +207,32 @@
                 <div id="meter-unit-2" class="meter-unit">RAW</div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 2</div>
+                <div id="meter-label-3" class="meter-label">RX Mon 2</div>
                 <div id="meter-val-3" class="meter-value val-gray">---</div>
                 <div id="meter-unit-3" class="meter-unit"></div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 3</div>
+                <div id="meter-label-4" class="meter-label">RX Mon 3</div>
                 <div id="meter-val-4" class="meter-value val-gray">---</div>
                 <div id="meter-unit-4" class="meter-unit"></div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 4</div>
+                <div id="meter-label-5" class="meter-label">RX Mon 4</div>
                 <div id="meter-val-5" class="meter-value val-gray">---</div>
                 <div id="meter-unit-5" class="meter-unit"></div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 5</div>
+                <div id="meter-label-6" class="meter-label">RX Mon 5</div>
                 <div id="meter-val-6" class="meter-value val-gray">---</div>
                 <div id="meter-unit-6" class="meter-unit"></div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 6</div>
+                <div id="meter-label-7" class="meter-label">RX Mon 6</div>
                 <div id="meter-val-7" class="meter-value val-gray">---</div>
                 <div id="meter-unit-7" class="meter-unit"></div>
             </div>
             <div class="meter-cell">
-                <div class="meter-label">RX Mon 7</div>
+                <div id="meter-label-8" class="meter-label">RX Mon 7</div>
                 <div id="meter-val-8" class="meter-value val-gray">---</div>
                 <div id="meter-unit-8" class="meter-unit"></div>
             </div>
@@ -254,7 +254,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.7 (Meter Exp)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.8 (Meter Fix)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -295,31 +295,7 @@
                 </div>
                 <div style="font-size:0.7rem; color:#888; margin-top:2px; text-align:right;">Exhaust Temp Color & Alarm</div>
             </div>
-            <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Biometric Registration</div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                    <div id="bio-status" style="color:#888; font-size:0.8rem;">Checking...</div>
-                    <button id="btn-bio-reg" class="action-btn btn-blue" onclick="registerBiometric()" style="padding:10px; font-size:0.9rem; width:auto;">Register</button>
-                    <button id="btn-bio-clear" class="action-btn btn-red" onclick="clearBiometric()" style="padding:10px; font-size:0.9rem; width:auto; display:none;">Clear</button>
-                </div>
-            </div>
-            <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
-                <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Feedback (Haptic/Audio)</div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <label style="color:#ddd; font-size:0.9rem;">Vibra</label>
-                    <div class="mini-switch">
-                        <button class="mini-opt" id="btn-vibe-on" onclick="setVibe(true)">ON</button>
-                        <button class="mini-opt" id="btn-vibe-off" onclick="setVibe(false)">OFF</button>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                    <label style="color:#ddd; font-size:0.9rem;">Sound</label>
-                    <div class="mini-switch">
-                        <button class="mini-opt" id="btn-sound-on" onclick="setSound(true)">ON</button>
-                        <button class="mini-opt" id="btn-sound-off" onclick="setSound(false)">OFF</button>
-                    </div>
-                </div>
-            </div>
+            
             <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Mapping Presets</div>
                 <div style="display:flex; gap:10px;">
@@ -334,6 +310,19 @@
             
             <div class="control-row" style="margin-top: 10px; border-top: 1px solid #444; padding-top: 5px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">📡 RX Monitor Config</div>
+                
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                     <select id="rx-slot-select" onchange="loadRxSlotFromUI()" style="width:100%; background:#005cbf; font-weight:bold; font-size:1.1rem; padding:10px;">
+                         <option value="0">Monitor 1 (VAL)</option>
+                         <option value="1">Monitor 2 (VAL2)</option>
+                         <option value="2">Monitor 3 (VAL3)</option>
+                         <option value="3">Monitor 4 (VAL4)</option>
+                         <option value="4">Monitor 5 (VAL5)</option>
+                         <option value="5">Monitor 6 (VAL6)</option>
+                         <option value="6">Monitor 7 (VAL7)</option>
+                     </select>
+                </div>
+
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="flex:0.3; padding:2px;">
                         <input type="color" id="rx-color-input" value="#FFD700" style="width:100%; height:30px; border:none; padding:0; background:none; cursor:pointer;">
@@ -381,9 +370,6 @@
                             <option value="0">0</option>
                             <option value="1">0.0</option>
                             <option value="2">0.00</option>
-                            <option value="3">0.000</option>
-                            <option value="4">0.0000</option>
-                            <option value="5">0.00000</option>
                         </select>
                     </div>
                     <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
@@ -403,11 +389,10 @@
                 </div>
                 
                 <div class="live-preview-box" style="padding: 5px; margin-top: 5px; margin-bottom: 5px;">
-                    <div style="font-size:0.7rem; color:#aaa;">Live Result (Preview)</div>
+                    <div style="font-size:0.7rem; color:#aaa;">Preview</div>
                     <div id="rx-live-val" class="live-val" style="font-size: 1.2rem;">---</div>
-                    <div id="rx-live-raw" class="live-raw" style="font-size: 0.7rem;">Raw: ---</div>
                 </div>
-                <button class="action-btn btn-orange" onclick="setRxConfig()" style="padding: 10px; font-size: 0.9rem;">SET & SAVE RX Monitor</button>
+                <button class="action-btn btn-orange" onclick="setRxConfig()" style="padding: 10px; font-size: 0.9rem;">SET & SAVE (Current Slot)</button>
                 <div id="rx-config-status" style="font-size:0.75rem; color:#888; margin-top:4px; text-align:right;"></div>
             </div>
             
@@ -422,7 +407,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.7<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.8 (Fix)<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -439,7 +424,6 @@
         const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
         const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-        /* --- ICONS (Ver 3.3) --- */
         const ICONS = {
             none: null,
             power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>',
@@ -460,41 +444,48 @@
             winch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v7"/><path d="M12 15v7"/><path d="M15 12h7"/><path d="M2 12h7"/></svg>'
         };
         let device, rxChar, txChar, gattServer;
-        // Data Storage
+        
+        // --- BUTTON DATA STORAGE ---
         let btnLabels = JSON.parse(localStorage.getItem("btnLabels")) || Array.from({ length: 8 }, (_, i) => `BTN ${i + 1}`);
         let btnOnVals = JSON.parse(localStorage.getItem("btnOnVals")) || Array(8).fill('01');
         let btnOffVals = JSON.parse(localStorage.getItem("btnOffVals")) || Array(8).fill('00');
         let btnIcons = JSON.parse(localStorage.getItem("btnIcons")) || Array(8).fill('none');
         let btnModes = JSON.parse(localStorage.getItem("btnModes")) || Array(8).fill('toggle');
         let btnEndian = JSON.parse(localStorage.getItem("btnEndian")) || Array(8).fill('big');
-        let btnAuth = JSON.parse(localStorage.getItem("btnAuth")) || Array(8).fill(false);
         let btnOnDelays = JSON.parse(localStorage.getItem("btnOnDelays")) || Array(8).fill(0);
         let btnOffDelays = JSON.parse(localStorage.getItem("btnOffDelays")) || Array(8).fill(0);
-        let authCredentialId = localStorage.getItem("authCredentialId");
+        let btnColors = JSON.parse(localStorage.getItem("btnColors")) || Array(8).fill('#00FF00');
+        
         let cfgVibe = JSON.parse(localStorage.getItem("cfgVibe")) !== false;
         let cfgSound = JSON.parse(localStorage.getItem("cfgSound")) !== false;
         let tempWarnVal = parseInt(localStorage.getItem("tempWarnVal")) || 950;
         let lastTempWarnTime = 0;
-        
-        // RX Monitor Settings
-        let rxMonitorId = localStorage.getItem("rxMonitorId") || "90";
-        let rxByteIndex = localStorage.getItem("rxByteIndex") || "2";
-        let rxMode = localStorage.getItem("rxMode") || "1";
-        let rxLabel = localStorage.getItem("rxLabel") || "RX Monitor";
-        let rxMul = parseFloat(localStorage.getItem("rxMul")) || 1.0;
-        let rxAdd = parseFloat(localStorage.getItem("rxAdd")) || 0;
-        let rxDec = parseInt(localStorage.getItem("rxDec")) || 0;
-        let rxUnit = localStorage.getItem("rxUnit") || "";
-        let rxWarnVal = parseFloat(localStorage.getItem("rxWarnVal")); // Can be null
-        let lastRxWarnTime = 0;
-        
-        // ★ NEW: Colors & Alarm Logic
         let tempColor = localStorage.getItem("tempColor") || "#00FFFF";
-        let rxColor = localStorage.getItem("rxColor") || "#FFD700";
-        let rxAlarmMode = localStorage.getItem("rxAlarmMode") || "high"; // 'high' (>=) or 'low' (<=)
+        
+        // --- MULTI-METER DATA STORAGE (NEW IN V3.8) ---
+        // Slots 0-6 represent Monitors 1-7 (Displayed as VAL, VAL2...VAL7)
+        // Default values provided for each slot
+        const DEFAULT_RX_CONFIG = {
+            id: "90", idx: "2", mode: "1", mul: 1.0, add: 0, dec: 0, 
+            unit: "", label: "Monitor", color: "#FFD700", alarmMode: "high", warnVal: null 
+        };
+        
+        let rxConfigs = JSON.parse(localStorage.getItem("rxConfigs"));
+        if (!rxConfigs || !Array.isArray(rxConfigs) || rxConfigs.length < 7) {
+            // Migrate old single values or init new
+            const oldId = localStorage.getItem("rxMonitorId") || "90";
+            const oldLbl = localStorage.getItem("rxLabel") || "RX Monitor";
+            rxConfigs = Array.from({length: 7}, (_, i) => ({
+                ...DEFAULT_RX_CONFIG, 
+                id: (i===0 ? oldId : "90"), 
+                label: (i===0 ? oldLbl : `Monitor ${i+1}`)
+            }));
+        }
+        
+        let lastRxWarnTimes = Array(7).fill(0);
+        let currentRxSlot = 0; // Currently editing slot in Settings (0-6)
 
         let audioCtx = null;
-        let btnColors = JSON.parse(localStorage.getItem("btnColors")) || Array(8).fill('#00FF00');
         let btnStates = Array(8).fill(false);
         let isConnected = false;
         let lastPulseTimes = Array(8).fill(0);
@@ -511,68 +502,107 @@
             if (tInput) {
                 tInput.value = tempWarnVal;
                 tInput.addEventListener('change', (e) => {
-                    let val = parseInt(e.target.value);
-                    if (isNaN(val)) val = 950;
-                    tempWarnVal = val;
-                    localStorage.setItem("tempWarnVal", tempWarnVal);
+                    let val = parseInt(e.target.value); if (isNaN(val)) val = 950;
+                    tempWarnVal = val; localStorage.setItem("tempWarnVal", tempWarnVal);
                 });
             }
-            // ★ Temp Color Listener
             const tColInput = document.getElementById("temp-color-input");
             if (tColInput) {
                 tColInput.value = tempColor;
                 tColInput.addEventListener('change', (e) => {
-                    tempColor = e.target.value;
-                    localStorage.setItem("tempColor", tempColor);
+                    tempColor = e.target.value; localStorage.setItem("tempColor", tempColor);
                 });
             }
-            
-            // Restore RX Config Values
-            const rId = document.getElementById("rx-monitor-id-input"); if(rId) rId.value = rxMonitorId;
-            const rIdx = document.getElementById("rx-byte-index-input"); if(rIdx) rIdx.value = rxByteIndex;
-            const rMode = document.getElementById("rx-mode-select"); if(rMode) rMode.value = rxMode;
-            
-            const rMul = document.getElementById("rx-mul-input"); if(rMul) rMul.value = rxMul;
-            const rAdd = document.getElementById("rx-add-input"); if(rAdd) rAdd.value = rxAdd;
-            const rDec = document.getElementById("rx-dec-select"); if(rDec) rDec.value = rxDec;
-            const rUnit = document.getElementById("rx-unit-input"); if(rUnit) rUnit.value = rxUnit;
-            const rAlm = document.getElementById("rx-alarm-input");
-            if(rAlm && !isNaN(rxWarnVal) && rxWarnVal !== null) rAlm.value = rxWarnVal;
-
-            const rLbl = document.getElementById("rx-label-input"); if(rLbl) rLbl.value = rxLabel;
-            const mLabel = document.getElementById("meter-label-2"); if(mLabel) mLabel.textContent = rxLabel;
-
-            // ★ Restore RX Color & Alarm Mode
-            const rCol = document.getElementById("rx-color-input");
-            if (rCol) rCol.value = rxColor;
-            const rAlmMode = document.getElementById("rx-alarm-mode-select");
-            if (rAlmMode) rAlmMode.value = rxAlarmMode;
-
-            // Live Preview Listeners
-            const updateGlobals = () => {
-                rxMul = parseFloat(document.getElementById("rx-mul-input").value) || 1.0;
-                rxAdd = parseFloat(document.getElementById("rx-add-input").value) || 0;
-                rxDec = parseInt(document.getElementById("rx-dec-select").value) || 0;
-                rxUnit = document.getElementById("rx-unit-input").value || "";
-            };
-            if(rMul) rMul.addEventListener("input", updateGlobals);
-            if(rAdd) rAdd.addEventListener("input", updateGlobals);
-            if(rDec) rDec.addEventListener("change", updateGlobals);
-            if(rUnit) rUnit.addEventListener("input", updateGlobals);
+            // Load initial RX Config UI for Slot 0
+            loadRxSlotFromUI();
+            updateLabelsOnMeterView();
         });
+
+        /* --- RX Config Logic (V3.8) --- */
+        function loadRxSlotFromUI() {
+            const sel = document.getElementById("rx-slot-select");
+            currentRxSlot = parseInt(sel.value);
+            const cfg = rxConfigs[currentRxSlot];
+            
+            document.getElementById("rx-monitor-id-input").value = cfg.id;
+            document.getElementById("rx-byte-index-input").value = cfg.idx;
+            document.getElementById("rx-mode-select").value = cfg.mode;
+            document.getElementById("rx-mul-input").value = cfg.mul;
+            document.getElementById("rx-add-input").value = cfg.add;
+            document.getElementById("rx-dec-select").value = cfg.dec;
+            document.getElementById("rx-unit-input").value = cfg.unit;
+            document.getElementById("rx-label-input").value = cfg.label;
+            document.getElementById("rx-color-input").value = cfg.color;
+            document.getElementById("rx-alarm-mode-select").value = cfg.alarmMode;
+            document.getElementById("rx-alarm-input").value = (cfg.warnVal === null) ? "" : cfg.warnVal;
+            
+            document.getElementById("rx-config-status").textContent = "";
+        }
+        
+        function updateLabelsOnMeterView() {
+            // Update labels for Meter View based on stored configs
+            // Slot 0 -> meter-label-2, Slot 1 -> meter-label-3 ... Slot 6 -> meter-label-8
+            for(let i=0; i<7; i++) {
+                const el = document.getElementById(`meter-label-${i+2}`);
+                if(el) el.textContent = rxConfigs[i].label;
+            }
+        }
+
+        function setRxConfig() {
+            const cfg = rxConfigs[currentRxSlot];
+            
+            // Get values from UI
+            const idVal = document.getElementById("rx-monitor-id-input").value.trim();
+            if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID"); return; }
+            
+            cfg.id = idVal;
+            cfg.idx = document.getElementById("rx-byte-index-input").value;
+            cfg.mode = document.getElementById("rx-mode-select").value;
+            cfg.mul = parseFloat(document.getElementById("rx-mul-input").value) || 1.0;
+            cfg.add = parseFloat(document.getElementById("rx-add-input").value) || 0;
+            cfg.dec = parseInt(document.getElementById("rx-dec-select").value) || 0;
+            cfg.unit = document.getElementById("rx-unit-input").value || "";
+            cfg.label = document.getElementById("rx-label-input").value || `Monitor ${currentRxSlot+1}`;
+            cfg.color = document.getElementById("rx-color-input").value;
+            cfg.alarmMode = document.getElementById("rx-alarm-mode-select").value;
+            const wVal = parseFloat(document.getElementById("rx-alarm-input").value);
+            cfg.warnVal = isNaN(wVal) ? null : wVal;
+
+            // Save to Array & LocalStorage
+            localStorage.setItem("rxConfigs", JSON.stringify(rxConfigs));
+            updateLabelsOnMeterView();
+            
+            const statusEl = document.getElementById("rx-config-status");
+            
+            // For Slot 0 (Main Monitor), we send SET_RX command to device for legacy support if needed,
+            // or we could potentially send specific commands for other slots if firmware supports it.
+            // CURRENTLY: Only Slot 0 sends "SET_RX" to device because standard firmware only listens to one configurable RX.
+            // If firmware is standard, only Slot 0 is fully "hardware filtered". Others rely on software filtering in JS if device sends all CAN.
+            // BUT assuming device sends VAL, VAL2... etc based on hardcoded or generic sniffing.
+            // For this V3.8, we only send SET_RX for Slot 0 as per V3.7 behavior.
+            
+            if (currentRxSlot === 0) {
+                let devMode = cfg.mode;
+                if (cfg.mode == 3) devMode = 0; 
+                if (cfg.mode == 4) devMode = 1; 
+                if (cfg.mode == 5) devMode = 2; 
+
+                const idDec = parseInt(cfg.id, 16); 
+                const cmd = `SET_RX=${idDec},${cfg.idx},${devMode}`; 
+                if (rxChar) {
+                    rxChar.writeValue(new TextEncoder().encode(cmd))
+                        .then(() => { if (statusEl) { statusEl.textContent = "📡 Sent to Device (Slot 1)"; statusEl.style.color = "#74c0fc"; } })
+                        .catch(e => { if (statusEl) { statusEl.textContent = "❌ Send failed"; statusEl.style.color = "#ff6b6b"; } });
+                } else {
+                    if (statusEl) { statusEl.textContent = "✅ Saved locally (Not Connected)"; statusEl.style.color = "#ffc107"; }
+                }
+            } else {
+                 if (statusEl) { statusEl.textContent = `✅ Saved locally (Slot ${currentRxSlot+1})`; statusEl.style.color = "#51cf66"; }
+            }
+        }
 
         /* --- Config UI Generation --- */
         function renderConfigList() {
-            const st = document.getElementById("bio-status");
-            const btnReg = document.getElementById("btn-bio-reg");
-            const btnClear = document.getElementById("btn-bio-clear");
-            if (authCredentialId) {
-                st.textContent = "✅ Registered"; st.style.color = "#28a745";
-                btnReg.style.display = "none"; btnClear.style.display = "block";
-            } else {
-                st.textContent = "⚠️ Not Registered"; st.style.color = "#ffc107";
-                btnReg.style.display = "block"; btnClear.style.display = "none";
-            }
             const container = document.getElementById('config-list-container');
             container.innerHTML = '';
             btnLabels.forEach((label, i) => {
@@ -582,7 +612,6 @@
                 const color = btnColors[i];
                 const endian = btnEndian[i];
                 const icon = btnIcons[i];
-                const isAuth = btnAuth[i];
                 row.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:2px; align-items:center;">
                   <button class="mini-opt" style="width:30px; height:30px; border:1px solid #555; padding:2px;" onclick="openIconPicker(${i})">
@@ -622,13 +651,6 @@
                      <button class="mini-opt ${endian === 'big' ? 'selected' : ''}" onclick="updateBtnEndian(${i}, 'big')">B</button>
                      <button class="mini-opt ${endian === 'little' ? 'selected' : ''}" onclick="updateBtnEndian(${i}, 'little')">L</button>
                    </div>
-                   </div>
-                 </div>
-                 <div style="display:flex; flex-direction:column; align-items:center; margin-left:5px;">
-                   <span style="font-size:0.6rem; color:#888;">${isAuth ? 'Lock' : 'Unlock'}</span>
-                   <button class="mini-opt ${isAuth ? 'selected' : ''}" style="width:30px; height:30px; border:1px solid #555; padding:2px;" onclick="toggleBtnAuth(${i})">
-                      ${isAuth ? '🔒' : '🔓'}
-                   </button>
                  </div>
             `;
                 container.appendChild(row);
@@ -667,33 +689,10 @@
         function updateBtnColor(index, newColor) { btnColors[index] = newColor; localStorage.setItem("btnColors", JSON.stringify(btnColors)); const btn = document.getElementById(`btn-${index + 1}`); if (btn) { btn.style.setProperty('--btn-color', newColor); } }
         function updateBtnEndian(index, mode) { btnEndian[index] = mode; localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); renderConfigList(); }
         function applyPreset(type) { if (type === 'normal') { btnEndian = Array(8).fill('big'); } else { btnEndian = Array(8).fill('little'); } localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); renderConfigList(); }
-        async function toggleBtnAuth(index) {
-            if (btnAuth[index]) { const authResult = await checkBiometricAuth(); if (!authResult) { alert("白 Authentication Failed. Cannot Unlock."); return; } }
-            btnAuth[index] = !btnAuth[index]; localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); renderConfigList();
-        }
-        function bufferToBase64(buffer) { const bytes = new Uint8Array(buffer); let binary = ''; for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); } return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
-        function base64ToBuffer(base64) { const binary = atob(base64.replace(/-/g, '+').replace(/_/g, '/')); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); } return bytes.buffer; }
-        async function registerBiometric() {
-            if (!window.PublicKeyCredential) { alert("WebAuthn not supported."); return; }
-            try {
-                const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-                const publicKey = { challenge: challenge, rp: { name: "M5Atom CAN Keypad", id: window.location.hostname }, user: { id: new Uint8Array(16), name: "user@local", displayName: "Local User" }, pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000, attestation: "none" };
-                const credential = await navigator.credentials.create({ publicKey });
-                const credId = bufferToBase64(credential.rawId); localStorage.setItem("authCredentialId", credId); authCredentialId = credId; alert("Biometric Registered Successfully! 🔓 -> 🔒"); renderConfigList();
-            } catch (err) { console.error("Registration failed", err); alert("Registration Failed: " + err.message); }
-        }
-        async function clearBiometric() { const authResult = await checkBiometricAuth(); if (!authResult) { alert("白 Authentication Failed. Cannot Clear."); return; } if (confirm("Clear registered biometric data?")) { localStorage.removeItem("authCredentialId"); authCredentialId = null; renderConfigList(); } }
-        async function checkBiometricAuth() {
-            if (!window.PublicKeyCredential) { alert("Biometric authentication not supported on this device/browser."); return false; }
-            if (!authCredentialId) { alert("Biometric not registered. Please register in Settings."); return false; }
-            try { const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge); const publicKeyCredentialRequestOptions = { challenge: challenge, timeout: 60000, userVerification: "required", rpId: window.location.hostname, allowCredentials: [{ id: base64ToBuffer(authCredentialId), type: 'public-key', transports: ['internal'] }] }; const credential = await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions }); if (credential) { return true; } } catch (err) { console.error("Auth failed", err); } return false;
-        }
-        function setVibe(state) { cfgVibe = state; localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe)); updateFeedbackUI(); }
-        function setSound(state) { cfgSound = state; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); updateFeedbackUI(); if (state) initAudio(); }
-        function updateFeedbackUI() {
-            const vo = document.getElementById('btn-vibe-on'); const vf = document.getElementById('btn-vibe-off'); if (vo && vf) { vo.className = `mini-opt ${cfgVibe ? 'selected' : ''}`; vf.className = `mini-opt ${!cfgVibe ? 'selected' : ''}`; }
-            const so = document.getElementById('btn-sound-on'); const sf = document.getElementById('btn-sound-off'); if (so && sf) { so.className = `mini-opt ${cfgSound ? 'selected' : ''}`; sf.className = `mini-opt ${!cfgSound ? 'selected' : ''}`; }
-        }
+        
+        function setVibe(state) { cfgVibe = state; localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe)); }
+        function setSound(state) { cfgSound = state; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); if (state) initAudio(); }
+        
         let currentIconBtnIndex = -1;
         function openIconPicker(index) {
             currentIconBtnIndex = index; const overlay = document.getElementById('icon-picker-overlay'); const grid = document.getElementById('icon-picker-grid');
@@ -712,7 +711,7 @@
         function enterFullscreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { }); } }
         function showMain() { document.getElementById("view-settings").style.display = "none"; document.getElementById("view-meter").style.display = "none"; document.getElementById("view-settings").classList.remove("active"); document.getElementById("view-meter").classList.remove("active"); const v = document.getElementById("view-main"); v.style.display = "flex"; v.classList.add("active"); }
         function showMeter() { document.getElementById("view-main").style.display = "none"; document.getElementById("view-settings").style.display = "none"; document.getElementById("view-main").classList.remove("active"); document.getElementById("view-settings").classList.remove("active"); const v = document.getElementById("view-meter"); v.style.display = "flex"; v.classList.add("active"); }
-        function showSettings() { renderConfigList(); updateFeedbackUI(); document.getElementById("view-main").style.display = "none"; document.getElementById("view-meter").style.display = "none"; document.getElementById("view-main").classList.remove("active"); document.getElementById("view-meter").classList.remove("active"); const v = document.getElementById("view-settings"); v.style.display = "flex"; v.classList.add("active"); }
+        function showSettings() { renderConfigList(); loadRxSlotFromUI(); document.getElementById("view-main").style.display = "none"; document.getElementById("view-meter").style.display = "none"; document.getElementById("view-main").classList.remove("active"); document.getElementById("view-meter").classList.remove("active"); const v = document.getElementById("view-settings"); v.style.display = "flex"; v.classList.add("active"); }
         function log(t) { const el = document.getElementById("log"); const time = new Date().toLocaleTimeString().split(' ')[0]; el.textContent = `[${time}] ${t}\n` + el.textContent.substring(0, 1000); }
         function updateStatus(connected) {
             isConnected = connected; const ind = document.getElementById("status-display"); const overlay = document.getElementById("connect-overlay"); const keypad = document.getElementById("keypad"); const discRow = document.getElementById("disconnect-row");
@@ -732,15 +731,18 @@
         }
         function disconnect() { if (device && device.gatt.connected) { device.gatt.disconnect(); updateStatus(false); } }
         
-        // ★ Common Helper for Updating Meter Values (Color, Alarm, etc.)
-        function updateMeterValue(elId, unitId, rawVal, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, labelForVoice) {
-            // Signed Logic
-            let signedVal = rawVal;
-            if (rxMode == 3) { if (signedVal & 0x80) signedVal -= 0x100; }
-            else if (rxMode == 4 || rxMode == 5) { if (signedVal & 0x8000) signedVal -= 0x10000; }
+        // --- METER UPDATE LOGIC ---
+        function updateMeterValue(elId, unitId, rawVal, cfgSlotIdx) {
+            // Get config for this slot
+            const cfg = rxConfigs[cfgSlotIdx];
+            if(!cfg) return;
 
-            const calcVal = (signedVal * rxMul) + rxAdd;
-            const dispVal = calcVal.toFixed(rxDec);
+            let signedVal = rawVal;
+            if (cfg.mode == 3) { if (signedVal & 0x80) signedVal -= 0x100; }
+            else if (cfg.mode == 4 || cfg.mode == 5) { if (signedVal & 0x8000) signedVal -= 0x10000; }
+
+            const calcVal = (signedVal * cfg.mul) + cfg.add;
+            const dispVal = calcVal.toFixed(cfg.dec);
 
             const el = document.getElementById(elId);
             const unitEl = document.getElementById(unitId);
@@ -748,86 +750,60 @@
             if (el) {
                 el.textContent = dispVal;
                 let isAlarm = false;
-                if (rxWarnVal !== null && !isNaN(rxWarnVal)) {
-                    if (rxAlarmMode === 'low') { if (calcVal <= rxWarnVal) isAlarm = true; }
-                    else { if (calcVal >= rxWarnVal) isAlarm = true; }
+                if (cfg.warnVal !== null && !isNaN(cfg.warnVal)) {
+                    if (cfg.alarmMode === 'low') { if (calcVal <= cfg.warnVal) isAlarm = true; }
+                    else { if (calcVal >= cfg.warnVal) isAlarm = true; }
                 }
                 
                 if (isAlarm) {
                     el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FF0000", 100);
                     el.classList.add("temp-warning");
-                    el.classList.remove("val-yellow");
-                    el.classList.remove("val-gray");
-                    el.classList.add("val-red");
+                    el.classList.remove("val-yellow"); el.classList.remove("val-gray"); el.classList.add("val-red");
                     
-                    // Throttle voice to avoid spamming
-                    if (Date.now() - lastRxWarnTime > 5000) {
-                        speakVoice(labelForVoice + "、警告！");
-                        lastRxWarnTime = Date.now();
+                    if (Date.now() - lastRxWarnTimes[cfgSlotIdx] > 5000) {
+                        speakVoice(cfg.label + "、警告！");
+                        lastRxWarnTimes[cfgSlotIdx] = Date.now();
                     }
                 } else {
-                    el.style.color = "#FFF"; setTimeout(() => el.style.color = rxColor, 100);
-                    el.classList.remove("temp-warning");
-                    el.classList.remove("val-red");
-                    el.classList.remove("val-gray");
-                    // Use User's Color
-                    el.style.textShadow = `0 0 10px ${rxColor}66`;
+                    el.style.color = "#FFF"; setTimeout(() => el.style.color = cfg.color, 100);
+                    el.classList.remove("temp-warning"); el.classList.remove("val-red"); el.classList.remove("val-gray");
+                    el.style.textShadow = `0 0 10px ${cfg.color}66`;
                 }
             }
-            if (unitEl) unitEl.textContent = rxUnit;
+            if (unitEl) unitEl.textContent = cfg.unit;
             return { disp: dispVal, raw: rawVal };
         }
 
         function handleNotifications(event) {
             const decoder = new TextDecoder('utf-8'); const cmd = decoder.decode(event.target.value); const cleanedCmd = cmd.replace(/(\r\n|\n|\r)/gm, "").trim(); log("RX: " + cleanedCmd); resetWatchdog();
             
-            // --- ID Sync ---
             if (cleanedCmd.startsWith("ID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync ID: " + val); canIdVal = val; localStorage.setItem("canIdVal", canIdVal); const el = document.getElementById("can-id-input"); if (el) el.value = canIdVal; }
             else if (cleanedCmd.startsWith("KID=")) { const val = cleanedCmd.split("=")[1].replace("0x", "").replace("0X", "").toUpperCase(); log("Sync KID: " + val); kMeterIdVal = val; localStorage.setItem("kMeterIdVal", kMeterIdVal); const el = document.getElementById("k-meter-id-input"); if (el) el.value = kMeterIdVal; }
             
-            // --- Main RX Monitor (Slot 2) ---
+            // --- METER UPDATES (Using Array Config) ---
             else if (cleanedCmd.startsWith("VAL=")) {
-                let rawVal = parseInt(cleanedCmd.split("=")[1]);
-                const res = updateMeterValue("meter-val-2", "meter-unit-2", rawVal, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, rxLabel);
-                
-                // Update Live Preview
-                const liveValEl = document.getElementById("rx-live-val");
-                const liveRawEl = document.getElementById("rx-live-raw");
-                if (liveValEl) {
-                    liveValEl.textContent = res.disp + " " + rxUnit;
-                    liveRawEl.textContent = `Raw: ${rawVal} (0x${rawVal.toString(16).toUpperCase()})`;
+                let raw = parseInt(cleanedCmd.split("=")[1]);
+                const res = updateMeterValue("meter-val-2", "meter-unit-2", raw, 0); // Slot 0
+                // Live preview logic only for currently selected slot in config
+                if (currentRxSlot === 0) {
+                    document.getElementById("rx-live-val").textContent = res.disp;
                 }
             }
-            // --- Additional RX Monitors (Slots 3-8) ---
-            // ★ Added parsing for VAL2...VAL7. 
-            // Note: Since we don't have unique settings for each slot yet (due to "don't touch other parts"), 
-            // they share the same Mul/Add/Alarm/Color config as the main monitor for now.
-            else if (cleanedCmd.startsWith("VAL2=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-3", "meter-unit-3", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター2");
-            }
-            else if (cleanedCmd.startsWith("VAL3=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-4", "meter-unit-4", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター3");
-            }
-            else if (cleanedCmd.startsWith("VAL4=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-5", "meter-unit-5", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター4");
-            }
-            else if (cleanedCmd.startsWith("VAL5=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-6", "meter-unit-6", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター5");
-            }
-            else if (cleanedCmd.startsWith("VAL6=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-7", "meter-unit-7", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター6");
-            }
-            else if (cleanedCmd.startsWith("VAL7=")) {
-                let raw = parseInt(cleanedCmd.split("=")[1]);
-                updateMeterValue("meter-val-8", "meter-unit-8", raw, rxMul, rxAdd, rxDec, rxUnit, rxWarnVal, rxAlarmMode, rxColor, "モニター7");
+            // Handling VAL2 through VAL7
+            else if (cleanedCmd.match(/^VAL[2-7]=/)) {
+                const parts = cleanedCmd.split("=");
+                const key = parts[0];
+                const raw = parseInt(parts[1]);
+                const slotNum = parseInt(key.replace("VAL", "")); // 2...7
+                const arrIdx = slotNum - 1; // 1...6 (Slot 1-6 in array)
+                const res = updateMeterValue(`meter-val-${slotNum+1}`, `meter-unit-${slotNum+1}`, raw, arrIdx);
+                
+                if (currentRxSlot === arrIdx) {
+                    document.getElementById("rx-live-val").textContent = res.disp;
+                }
             }
 
-            // --- Exhaust Temp (Slot 1) ---
+            // --- Exhaust Temp (Fixed) ---
             else if (cleanedCmd.startsWith("TEMP=")) {
                 const val = cleanedCmd.split("=")[1]; const el = document.getElementById("meter-val-1");
                 if (el) {
@@ -839,8 +815,7 @@
                         if (Date.now() - lastTempWarnTime > 5000) { speakVoice("排気温度、警告！"); lastTempWarnTime = Date.now(); } 
                     } else { 
                         el.classList.remove("temp-warning"); el.classList.remove("val-red");
-                        el.style.color = tempColor;
-                        el.style.textShadow = `0 0 10px ${tempColor}66`;
+                        el.style.color = tempColor; el.style.textShadow = `0 0 10px ${tempColor}66`;
                     }
                 }
             }
@@ -873,7 +848,6 @@
         function reverseBits(b) { b = b & 0xFF; let r = 0; for (let i = 0; i < 8; i++) { if ((b >> i) & 1) { r |= 1 << (7 - i); } } return r; }
         async function handlePointerDown(n, e) {
             if (e) { e.preventDefault(); } triggerFeedback(); const btnEl = document.getElementById(`btn-${n}`); if (btnEl) btnEl.classList.add('pressing'); const idx = n - 1;
-            if (btnAuth[idx]) { const authResult = await checkBiometricAuth(); if (!authResult) { if (btnEl) btnEl.classList.remove('pressing'); alert("🔒 Authentication Failed"); return; } }
             const currentState = btnStates[idx]; const targetState = !currentState; const delay = targetState ? btnOnDelays[idx] : btnOffDelays[idx];
             if (delay > 0) { holdTimers[idx] = setTimeout(() => { executeAction(n); holdTimers[idx] = null; if (btnEl) btnEl.classList.remove('pressing'); }, delay * 1000); } else { executeAction(n); if (btnEl) btnEl.classList.remove('pressing'); }
         }
@@ -881,88 +855,24 @@
         function executeAction(n) { const idx = n - 1; const isMomentary = (btnModes[idx] === 'momentary'); if (isMomentary) { triggerPulse(n); } else { const newState = !btnStates[idx]; sendState(n, newState); } }
         function triggerPulse(n) { const idx = n - 1; sendState(n, true); setTimeout(() => { sendState(n, false); }, 150); lastPulseTimes[idx] = Date.now(); }
         
-        /* --- FIXED FUNCTION --- */
         function setCanId() { 
-            const el = document.getElementById("can-id-input"); 
-            const val = el.value; 
+            const el = document.getElementById("can-id-input"); const val = el.value; 
             if (val.match(/^[0-9A-Fa-f]+$/)) { 
-                log(`Set CAN ID: 0x${val}`); 
-                localStorage.setItem("canIdVal", val); 
-                canIdVal = val; 
-                if (rxChar) { 
-                    const cmd = `ID=${val}`; 
-                    rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR ID")); 
-                } 
-            } else { 
-                alert("Invalid Hex ID"); 
-            } 
+                log(`Set CAN ID: 0x${val}`); localStorage.setItem("canIdVal", val); canIdVal = val; 
+                if (rxChar) { const cmd = `ID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR ID")); } 
+            } else { alert("Invalid Hex ID"); } 
         }
-        
         function setKMeterId() { 
-            const el = document.getElementById("k-meter-id-input"); 
-            const val = el.value; 
+            const el = document.getElementById("k-meter-id-input"); const val = el.value; 
             if (val.match(/^[0-9A-Fa-f]+$/)) { 
-                log(`Set K-Meter ID: 0x${val}`); 
-                localStorage.setItem("kMeterIdVal", val); 
-                kMeterIdVal = val; 
-                if (rxChar) { 
-                    const cmd = `KID=${val}`; 
-                    rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR KID")); 
-                } 
-            } else { 
-                alert("Invalid Hex ID"); 
-            } 
+                log(`Set K-Meter ID: 0x${val}`); localStorage.setItem("kMeterIdVal", val); kMeterIdVal = val; 
+                if (rxChar) { const cmd = `KID=${val}`; rxChar.writeValue(new TextEncoder().encode(cmd)).catch(e => log("TX ERR KID")); } 
+            } else { alert("Invalid Hex ID"); } 
         }
-        
-        function setRxConfig() {
-            const idVal = document.getElementById("rx-monitor-id-input").value.trim();
-            const idxVal = document.getElementById("rx-byte-index-input").value;
-            const modeVal = document.getElementById("rx-mode-select").value;
-            const statusEl = document.getElementById("rx-config-status");
-            const mulVal = parseFloat(document.getElementById("rx-mul-input").value) || 1.0;
-            const addVal = parseFloat(document.getElementById("rx-add-input").value) || 0;
-            const decVal = parseInt(document.getElementById("rx-dec-select").value) || 0;
-            const unitVal = document.getElementById("rx-unit-input").value || "";
-            const lblVal = document.getElementById("rx-label-input").value || "RX Monitor";
-            const almVal = parseFloat(document.getElementById("rx-alarm-input").value);
-            
-            // ★ New: Color & Alarm Mode
-            const colVal = document.getElementById("rx-color-input").value;
-            const almModeVal = document.getElementById("rx-alarm-mode-select").value;
 
-            if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID (例: 90, 1A3)"); return; }
-            
-            rxMonitorId = idVal; rxByteIndex = idxVal; rxMode = modeVal;
-            rxMul = mulVal; rxAdd = addVal; rxDec = decVal; rxUnit = unitVal;
-            rxLabel = lblVal;
-            rxColor = colVal;
-            rxAlarmMode = almModeVal;
-            rxWarnVal = isNaN(almVal) ? null : almVal;
-            
-            localStorage.setItem("rxMonitorId", rxMonitorId); localStorage.setItem("rxByteIndex", rxByteIndex); localStorage.setItem("rxMode", rxMode);
-            localStorage.setItem("rxMul", rxMul); localStorage.setItem("rxAdd", rxAdd); localStorage.setItem("rxDec", rxDec); localStorage.setItem("rxUnit", rxUnit);
-            localStorage.setItem("rxLabel", rxLabel);
-            localStorage.setItem("rxColor", rxColor); // Save Color
-            localStorage.setItem("rxAlarmMode", rxAlarmMode); // Save Alarm Mode
-            if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal);
-            else localStorage.removeItem("rxWarnVal");
-            
-            const mLabel = document.getElementById("meter-label-2");
-            if(mLabel) mLabel.textContent = rxLabel;
-
-            // Map Signed Modes (3,4,5) back to Basic Modes (0,1,2) for device compatibility
-            let devMode = modeVal;
-            if (modeVal == 3) devMode = 0; // 1B Signed -> 1B
-            if (modeVal == 4) devMode = 1; // 2B-LE Signed -> 2B-LE
-            if (modeVal == 5) devMode = 2; // 2B-BE Signed -> 2B-BE
-
-            const idDec = parseInt(idVal, 16); const cmd = `SET_RX=${idDec},${idxVal},${devMode}`; log("TX: " + cmd);
-            if (!rxChar) { if (statusEl) { statusEl.textContent = "✅ Saved locally (not connected)"; statusEl.style.color = "#ffc107"; } return; }
-            rxChar.writeValue(new TextEncoder().encode(cmd)).then(() => { log("SET_RX sent OK: 0x" + idVal.toUpperCase()); if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; } }).catch(e => { log("TX ERR SET_RX: " + e); if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; } });
-        }
         function exportConfig() {
-            const config = { version: "8.1.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, tempColor: tempColor, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal, rxColor: rxColor, rxAlarmMode: rxAlarmMode };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_7.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
+            const config = { version: "8.1.0", timestamp: new Date().toISOString(), btnLabels, btnModes, btnColors, btnOnVals, btnOffVals, btnEndian, btnIcons, btnOnDelays, btnOffDelays, cfgVibe, cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal, tempColor, rxConfigs };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_8.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
         }
         function importConfig() { document.getElementById('import-file').click(); }
         function handleFileSelect(input) {
@@ -977,33 +887,18 @@
                     if (config.btnOffVals) { btnOffVals = config.btnOffVals; localStorage.setItem("btnOffVals", JSON.stringify(btnOffVals)); }
                     if (config.btnEndian) { btnEndian = config.btnEndian; localStorage.setItem("btnEndian", JSON.stringify(btnEndian)); }
                     if (config.btnIcons) { btnIcons = config.btnIcons; localStorage.setItem("btnIcons", JSON.stringify(btnIcons)); }
-                    if (config.btnAuth) { btnAuth = config.btnAuth; localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); }
                     if (config.cfgVibe !== undefined) { cfgVibe = config.cfgVibe; localStorage.setItem("cfgVibe", JSON.stringify(cfgVibe)); }
                     if (config.cfgSound !== undefined) { cfgSound = config.cfgSound; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); }
                     if (config.canId) { document.getElementById("can-id-input").value = config.canId; canIdVal = config.canId; localStorage.setItem("canIdVal", canIdVal); }
                     if (config.kMeterId) { document.getElementById("k-meter-id-input").value = config.kMeterId; kMeterIdVal = config.kMeterId; localStorage.setItem("kMeterIdVal", kMeterIdVal); }
-                    
                     if (config.tempWarnVal) { tempWarnVal = config.tempWarnVal; localStorage.setItem("tempWarnVal", tempWarnVal); document.getElementById("temp-alarm-input").value = tempWarnVal; }
                     if (config.tempColor) { tempColor = config.tempColor; localStorage.setItem("tempColor", tempColor); document.getElementById("temp-color-input").value = tempColor; }
-
                     if (config.btnOnDelays) { btnOnDelays = config.btnOnDelays; localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays)); }
                     if (config.btnOffDelays) { btnOffDelays = config.btnOffDelays; localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays)); }
                     
-                    // RX Config Import
-                    if (config.rxMonitorId) { rxMonitorId = config.rxMonitorId; localStorage.setItem("rxMonitorId", rxMonitorId); }
-                    if (config.rxByteIndex) { rxByteIndex = config.rxByteIndex; localStorage.setItem("rxByteIndex", rxByteIndex); }
-                    if (config.rxMode) { rxMode = config.rxMode; localStorage.setItem("rxMode", rxMode); }
-                    if (config.rxMul !== undefined) { rxMul = config.rxMul; localStorage.setItem("rxMul", rxMul); }
-                    if (config.rxAdd !== undefined) { rxAdd = config.rxAdd; localStorage.setItem("rxAdd", rxAdd); }
-                    if (config.rxDec !== undefined) { rxDec = config.rxDec; localStorage.setItem("rxDec", rxDec); }
-                    if (config.rxUnit !== undefined) { rxUnit = config.rxUnit; localStorage.setItem("rxUnit", rxUnit); }
-                    if (config.rxLabel !== undefined) { rxLabel = config.rxLabel; localStorage.setItem("rxLabel", rxLabel); }
-                    if (config.rxWarnVal !== undefined) { rxWarnVal = config.rxWarnVal; if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal); }
-                    if (config.rxColor) { rxColor = config.rxColor; localStorage.setItem("rxColor", rxColor); }
-                    if (config.rxAlarmMode) { rxAlarmMode = config.rxAlarmMode; localStorage.setItem("rxAlarmMode", rxAlarmMode); }
-                    
-                    if (!authCredentialId) { if (btnAuth.some(b => b === true)) { btnAuth = Array(8).fill(false); localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); alert("Safety: Locks disabled (No Credential)"); } }
-                    log("Config Loaded"); alert("Configuration Loaded Successfully"); renderConfigList(); renderKeypadGrid();
+                    if (config.rxConfigs) { rxConfigs = config.rxConfigs; localStorage.setItem("rxConfigs", JSON.stringify(rxConfigs)); }
+
+                    log("Config Loaded"); alert("Configuration Loaded Successfully"); renderConfigList(); renderKeypadGrid(); loadRxSlotFromUI(); updateLabelsOnMeterView();
                 } catch (err) { log("Import Err: " + err); alert("Failed to load config"); }
             }; reader.readAsText(file); input.value = '';
         }
@@ -1025,30 +920,6 @@
         updateMainSoundIcon();
         const synth = window.speechSynthesis;
         function speakVoice(text) { if (synth.speaking) synth.cancel(); const utter = new SpeechSynthesisUtterance(text); utter.lang = "ja-JP"; utter.rate = 1.2; synth.speak(utter); }
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; let recognition = null; let isListening = false;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition(); recognition.lang = 'ja-JP'; recognition.continuous = true; recognition.interimResults = false;
-            recognition.onresult = (event) => { const last = event.results.length - 1; const transcript = event.results[last][0].transcript.trim(); log("Voice: " + transcript); 
-                if (transcript.includes("キーパッド") || transcript.includes("キーパット")) {
-                     showMain();
-                     speakVoice("キーパッドを表示");
-                     return;
-                }
-                if (transcript.includes("ダッシュメーター") || transcript.includes("メーター")) {
-                     showMeter();
-                     speakVoice("ダッシュメーターを表示");
-                     return;
-                }
-                btnLabels.forEach((label, index) => { const cleanLabel = label.replace(/\s+/g, ''); const cleanVoice = transcript.replace(/\s+/g, ''); if (cleanVoice.includes(cleanLabel) && cleanLabel.length > 0) { handleVoiceCommand(index, transcript); } }); 
-            };
-            recognition.onend = () => { if (isListening) recognition.start(); updateMicIcon(); };
-            recognition.onerror = (e) => { console.log("Voice Err:", e.error); if (['not-allowed', 'network', 'service-not-allowed', 'audio-capture'].includes(e.error)) { isListening = false; speakVoice("音声認識エラー"); updateMicIcon(); } };
-        }
-        function handleVoiceCommand(index, transcript) { const btnNum = index + 1; const currentState = btnStates[index]; const label = btnLabels[index]; const isLock = btnAuth[index]; if (isLock) { speakVoice(label + "はロックされています。"); return; } if (btnModes[index] === 'momentary') { executeAction(btnNum); speakVoice(label + "、実行"); return; } const isOffCommand = transcript.includes("オフ") || transcript.includes("停止") || transcript.includes("切") || transcript.toLowerCase().includes("off"); if (currentState) { if (isOffCommand) { executeAction(btnNum); speakVoice(label + "をオフにしました"); } else { speakVoice(label + "は、既にオンです"); } } else { if (isOffCommand) { speakVoice(label + "は、既にオフです"); } else { executeAction(btnNum); speakVoice(label + "をオンにしました"); } } }
-        function injectMicButton() { const headerGroup = document.querySelector('.main-header > div:last-child'); if (!headerGroup) return; const micBtn = document.createElement('button'); micBtn.id = "mic-toggle-btn"; micBtn.className = "header-btn"; micBtn.innerHTML = "🎙️"; micBtn.style.fontSize = "1.2rem"; micBtn.onclick = toggleVoiceControl; headerGroup.insertBefore(micBtn, headerGroup.firstChild); }
-        function toggleVoiceControl() { if (!recognition) { alert("このブラウザは音声認識に対応していません"); return; } isListening = !isListening; if (isListening) { recognition.start(); speakVoice("音声操作、開始"); } else { recognition.stop(); speakVoice("停止します"); } updateMicIcon(); }
-        function updateMicIcon() { const micBtn = document.getElementById("mic-toggle-btn"); if (!micBtn) return; if (isListening) { micBtn.innerHTML = "🔴"; micBtn.style.color = "#ff4444"; micBtn.style.animation = "pulse-mic 1.5s infinite"; } else { micBtn.innerHTML = "🎙️"; micBtn.style.color = "#aaa"; micBtn.style.animation = "none"; } }
-        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', injectMicButton); } else { injectMicButton(); }
     </script>
 </body>
 </html>
