@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>M5Atom CAN Keypad (v3.2 Layout Tweak)</title>
+    <title>M5Atom CAN Keypad (v3.3 Color & Alarm)</title>
     <style>
         /* Reset & Base */
         html, body {
@@ -230,7 +230,7 @@
         </div>
         <div id="connect-overlay">
             <button id="start-btn" onclick="handleStartConnect()">CONNECT<br>START</button>
-            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.2 (Layout Tweak)</div>
+            <div style="margin-top:20px; color:#666; font-size:0.8rem;">Ver 3.3 (Colors & Alarm)</div>
         </div>
         <div id="sync-overlay">⚙️ Syncing...</div>
         <div id="keypad"></div>
@@ -260,11 +260,16 @@
                 </div>
             </div>
             <div class="control-row" style="margin-top:5px;">
-                <div class="id-input-group" style="border: 1px solid #d35400;">
-                    <label style="min-width: 60px; color: #e67e22;">Alarm:°C</label>
-                    <input type="number" id="temp-alarm-input" value="950" placeholder="e.g. 900">
+                <div style="display:flex; gap:5px;">
+                    <div class="id-input-group" style="flex:0.4; padding:2px;">
+                        <input type="color" id="temp-color-input" value="#00FFFF" style="width:100%; height:35px; border:none; padding:0; background:none; cursor:pointer;">
+                    </div>
+                    <div class="id-input-group" style="flex:1; border: 1px solid #d35400;">
+                        <label style="min-width: 50px; color: #e67e22;">Alm:°C</label>
+                        <input type="number" id="temp-alarm-input" value="950" placeholder="e.g. 900">
+                    </div>
                 </div>
-                <div style="font-size:0.7rem; color:#888; margin-top:2px; text-align:right;">Voice warning threshold</div>
+                <div style="font-size:0.7rem; color:#888; margin-top:2px; text-align:right;">Exhaust Temp Color & Alarm</div>
             </div>
             <div class="control-row" style="margin-top: 10px; border-bottom:1px solid #444; padding-bottom:10px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">Biometric Registration</div>
@@ -306,6 +311,9 @@
             <div class="control-row" style="margin-top: 10px; border-top: 1px solid #444; padding-top: 5px;">
                 <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 5px;">📡 RX Monitor Config</div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
+                    <div class="id-input-group" style="flex:0.3; padding:2px;">
+                        <input type="color" id="rx-color-input" value="#FFD700" style="width:100%; height:30px; border:none; padding:0; background:none; cursor:pointer;">
+                    </div>
                     <div class="id-input-group" style="flex:1; padding: 1px; gap: 1px;">
                         <label style="min-width:30px; font-size:0.75rem; color:#74c0fc; padding-left:2px;">Name</label>
                         <input type="text" id="rx-label-input" value="RX Monitor" maxlength="12" style="flex:1; background:#222; border:1px solid #555; color:white; padding:4px 0; border-radius:4px; text-align:center; font-size:0.8rem;">
@@ -361,8 +369,12 @@
                 </div>
                 <div style="display:flex; gap:2px; margin-bottom:4px;">
                     <div class="id-input-group" style="width: 100%; padding: 1px; gap: 1px; border:1px solid #d35400;">
-                        <label style="min-width:60px; font-size:0.75rem; padding-left:5px; color:#e67e22;">Alarm Val</label>
-                        <input type="number" id="rx-alarm-input" placeholder="Off (Empty)" style="flex:1; background:#222; border:1px solid #555; color:white; padding:8px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.9rem;">
+                        <label style="min-width:35px; font-size:0.75rem; padding-left:5px; color:#e67e22;">Alarm</label>
+                        <select id="rx-alarm-mode-select" style="flex:0.6; background:#222; border:1px solid #555; color:#ccc; padding:4px 0; border-radius:4px; font-size:0.75rem; margin-right:2px;">
+                            <option value="high">Over (≧)</option>
+                            <option value="low">Under (≦)</option>
+                        </select>
+                        <input type="number" id="rx-alarm-input" placeholder="Off" style="flex:1; background:#222; border:1px solid #555; color:white; padding:8px 0; border-radius:4px; text-align:center; font-family:monospace; font-size:0.9rem;">
                     </div>
                 </div>
                 
@@ -386,7 +398,7 @@
                 </div>
                 <input type="file" id="import-file" style="display:none" accept=".json" onchange="handleFileSelect(this)">
             </div>
-            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.2<br>M5Atom S3 CAN</div>
+            <div style="color: #666; font-size: 0.8rem; text-align: center; margin-top: 10px;">Atom S3 Keypad & Dash Meter Ver 3.3<br>M5Atom S3 CAN</div>
         </div>
         <pre id="log">Logs...</pre>
     </div>
@@ -444,16 +456,18 @@
         let rxMonitorId = localStorage.getItem("rxMonitorId") || "90";
         let rxByteIndex = localStorage.getItem("rxByteIndex") || "2";
         let rxMode = localStorage.getItem("rxMode") || "1";
-        // ★ NEW: Label
         let rxLabel = localStorage.getItem("rxLabel") || "RX Monitor";
-        // ★ NEW: Calc Variables
         let rxMul = parseFloat(localStorage.getItem("rxMul")) || 1.0;
         let rxAdd = parseFloat(localStorage.getItem("rxAdd")) || 0;
         let rxDec = parseInt(localStorage.getItem("rxDec")) || 0;
         let rxUnit = localStorage.getItem("rxUnit") || "";
-        // ★ NEW: Alarm
         let rxWarnVal = parseFloat(localStorage.getItem("rxWarnVal")); // Can be null
         let lastRxWarnTime = 0;
+        
+        // ★ NEW: Colors & Alarm Logic
+        let tempColor = localStorage.getItem("tempColor") || "#00FFFF";
+        let rxColor = localStorage.getItem("rxColor") || "#FFD700";
+        let rxAlarmMode = localStorage.getItem("rxAlarmMode") || "high"; // 'high' (>=) or 'low' (<=)
 
         let audioCtx = null;
         let btnColors = JSON.parse(localStorage.getItem("btnColors")) || Array(8).fill('#00FF00');
@@ -479,13 +493,21 @@
                     localStorage.setItem("tempWarnVal", tempWarnVal);
                 });
             }
+            // ★ Temp Color Listener
+            const tColInput = document.getElementById("temp-color-input");
+            if (tColInput) {
+                tColInput.value = tempColor;
+                tColInput.addEventListener('change', (e) => {
+                    tempColor = e.target.value;
+                    localStorage.setItem("tempColor", tempColor);
+                });
+            }
             
             // Restore RX Config Values
             const rId = document.getElementById("rx-monitor-id-input"); if(rId) rId.value = rxMonitorId;
             const rIdx = document.getElementById("rx-byte-index-input"); if(rIdx) rIdx.value = rxByteIndex;
             const rMode = document.getElementById("rx-mode-select"); if(rMode) rMode.value = rxMode;
             
-            // Restore Calc Values
             const rMul = document.getElementById("rx-mul-input"); if(rMul) rMul.value = rxMul;
             const rAdd = document.getElementById("rx-add-input"); if(rAdd) rAdd.value = rxAdd;
             const rDec = document.getElementById("rx-dec-select"); if(rDec) rDec.value = rxDec;
@@ -493,11 +515,14 @@
             const rAlm = document.getElementById("rx-alarm-input");
             if(rAlm && !isNaN(rxWarnVal) && rxWarnVal !== null) rAlm.value = rxWarnVal;
 
-            // Restore Label
-            const rLbl = document.getElementById("rx-label-input"); 
-            if(rLbl) rLbl.value = rxLabel;
-            const mLabel = document.getElementById("meter-label-2");
-            if(mLabel) mLabel.textContent = rxLabel;
+            const rLbl = document.getElementById("rx-label-input"); if(rLbl) rLbl.value = rxLabel;
+            const mLabel = document.getElementById("meter-label-2"); if(mLabel) mLabel.textContent = rxLabel;
+
+            // ★ Restore RX Color & Alarm Mode
+            const rCol = document.getElementById("rx-color-input");
+            if (rCol) rCol.value = rxColor;
+            const rAlmMode = document.getElementById("rx-alarm-mode-select");
+            if (rAlmMode) rAlmMode.value = rxAlarmMode;
 
             // Live Preview Listeners
             const updateGlobals = () => {
@@ -599,7 +624,6 @@
             for (let i = 0; i < 8; i++) { 
                 sendBtnConfig(i); 
                 await new Promise(r => setTimeout(r, 150)); 
-                // Removed sendState loop to fix race condition (User Sync Issue)
             }
             if (overlay) overlay.style.display = "none"; log("Config Sync Complete");
         }
@@ -706,10 +730,15 @@
                 const unitEl = document.getElementById("meter-unit-2");
                 if (el) {
                     el.textContent = dispVal;
-                    el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FFD700", 100);
+                    // ★ Modified: Use rxColor or Flash Red if Alarm
+                    let isAlarm = false;
+                    if (rxWarnVal !== null && !isNaN(rxWarnVal)) {
+                        if (rxAlarmMode === 'low') { if (calcVal <= rxWarnVal) isAlarm = true; }
+                        else { if (calcVal >= rxWarnVal) isAlarm = true; }
+                    }
                     
-                    // ★ RX Alarm Logic
-                    if (rxWarnVal !== null && !isNaN(rxWarnVal) && calcVal >= rxWarnVal) {
+                    if (isAlarm) {
+                        el.style.color = "#FFF"; setTimeout(() => el.style.color = "#FF0000", 100); // Alarm Flash
                         el.classList.add("temp-warning");
                         el.classList.remove("val-yellow");
                         el.classList.add("val-red");
@@ -719,9 +748,12 @@
                             lastRxWarnTime = Date.now();
                         }
                     } else {
+                        // Normal Color (User Setting)
+                        el.style.color = "#FFF"; setTimeout(() => el.style.color = rxColor, 100);
                         el.classList.remove("temp-warning");
                         el.classList.remove("val-red");
-                        el.classList.add("val-yellow");
+                        // Overwrite CSS class color
+                        el.style.textShadow = `0 0 10px ${rxColor}66`; // Add glow
                     }
                 }
                 if (unitEl) unitEl.textContent = rxUnit;
@@ -738,7 +770,18 @@
                 const val = cleanedCmd.split("=")[1]; const el = document.getElementById("meter-val-1");
                 if (el) {
                     el.textContent = val; let tempVal = parseInt(val);
-                    if (!isNaN(tempVal) && tempVal >= tempWarnVal) { el.classList.add("temp-warning"); el.classList.remove("val-cyan"); el.classList.add("val-red"); if (Date.now() - lastTempWarnTime > 5000) { speakVoice("排気温度、警告！"); lastTempWarnTime = Date.now(); } } else { el.classList.remove("temp-warning"); el.classList.remove("val-red"); el.classList.add("val-cyan"); }
+                    // ★ Modified: Use tempColor logic
+                    let isAlarm = (!isNaN(tempVal) && tempVal >= tempWarnVal);
+                    
+                    if (isAlarm) { 
+                        el.classList.add("temp-warning"); el.classList.remove("val-cyan"); el.classList.add("val-red");
+                        el.style.color = "#FF0000";
+                        if (Date.now() - lastTempWarnTime > 5000) { speakVoice("排気温度、警告！"); lastTempWarnTime = Date.now(); } 
+                    } else { 
+                        el.classList.remove("temp-warning"); el.classList.remove("val-red");
+                        el.style.color = tempColor; // Use Custom Color
+                        el.style.textShadow = `0 0 10px ${tempColor}66`;
+                    }
                 }
             }
             else if (cleanedCmd.startsWith("STATE=")) {
@@ -822,17 +865,25 @@
             const unitVal = document.getElementById("rx-unit-input").value || "";
             const lblVal = document.getElementById("rx-label-input").value || "RX Monitor";
             const almVal = parseFloat(document.getElementById("rx-alarm-input").value);
+            
+            // ★ New: Color & Alarm Mode
+            const colVal = document.getElementById("rx-color-input").value;
+            const almModeVal = document.getElementById("rx-alarm-mode-select").value;
 
             if (!idVal.match(/^[0-9A-Fa-f]+$/)) { alert("Invalid Hex ID (例: 90, 1A3)"); return; }
             
             rxMonitorId = idVal; rxByteIndex = idxVal; rxMode = modeVal;
             rxMul = mulVal; rxAdd = addVal; rxDec = decVal; rxUnit = unitVal;
             rxLabel = lblVal;
+            rxColor = colVal;
+            rxAlarmMode = almModeVal;
             rxWarnVal = isNaN(almVal) ? null : almVal;
             
             localStorage.setItem("rxMonitorId", rxMonitorId); localStorage.setItem("rxByteIndex", rxByteIndex); localStorage.setItem("rxMode", rxMode);
             localStorage.setItem("rxMul", rxMul); localStorage.setItem("rxAdd", rxAdd); localStorage.setItem("rxDec", rxDec); localStorage.setItem("rxUnit", rxUnit);
             localStorage.setItem("rxLabel", rxLabel);
+            localStorage.setItem("rxColor", rxColor); // Save Color
+            localStorage.setItem("rxAlarmMode", rxAlarmMode); // Save Alarm Mode
             if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal);
             else localStorage.removeItem("rxWarnVal");
             
@@ -850,8 +901,8 @@
             rxChar.writeValue(new TextEncoder().encode(cmd)).then(() => { log("SET_RX sent OK: 0x" + idVal.toUpperCase()); if (statusEl) { statusEl.textContent = "📡 Sent → waiting for device..."; statusEl.style.color = "#74c0fc"; } }).catch(e => { log("TX ERR SET_RX: " + e); if (statusEl) { statusEl.textContent = "❌ Send failed: " + e.message; statusEl.style.color = "#ff6b6b"; } });
         }
         function exportConfig() {
-            const config = { version: "8.0.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
+            const config = { version: "8.1.0", timestamp: new Date().toISOString(), btnLabels: btnLabels, btnModes: btnModes, btnColors: btnColors, btnOnVals: btnOnVals, btnOffVals: btnOffVals, btnEndian: btnEndian, btnIcons: btnIcons, btnAuth: btnAuth, btnOnDelays: btnOnDelays, btnOffDelays: btnOffDelays, cfgVibe: cfgVibe, cfgSound: cfgSound, canId: canIdVal, kMeterId: kMeterIdVal, tempWarnVal: tempWarnVal, tempColor: tempColor, rxMonitorId: rxMonitorId, rxByteIndex: rxByteIndex, rxMode: rxMode, rxMul: rxMul, rxAdd: rxAdd, rxDec: rxDec, rxUnit: rxUnit, rxLabel: rxLabel, rxWarnVal: rxWarnVal, rxColor: rxColor, rxAlarmMode: rxAlarmMode };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2)); const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", "m5_can_config_v3_3.json"); document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove(); log("Config Exported");
         }
         function importConfig() { document.getElementById('import-file').click(); }
         function handleFileSelect(input) {
@@ -871,9 +922,13 @@
                     if (config.cfgSound !== undefined) { cfgSound = config.cfgSound; localStorage.setItem("cfgSound", JSON.stringify(cfgSound)); }
                     if (config.canId) { document.getElementById("can-id-input").value = config.canId; canIdVal = config.canId; localStorage.setItem("canIdVal", canIdVal); }
                     if (config.kMeterId) { document.getElementById("k-meter-id-input").value = config.kMeterId; kMeterIdVal = config.kMeterId; localStorage.setItem("kMeterIdVal", kMeterIdVal); }
+                    
                     if (config.tempWarnVal) { tempWarnVal = config.tempWarnVal; localStorage.setItem("tempWarnVal", tempWarnVal); document.getElementById("temp-alarm-input").value = tempWarnVal; }
+                    if (config.tempColor) { tempColor = config.tempColor; localStorage.setItem("tempColor", tempColor); document.getElementById("temp-color-input").value = tempColor; }
+
                     if (config.btnOnDelays) { btnOnDelays = config.btnOnDelays; localStorage.setItem("btnOnDelays", JSON.stringify(btnOnDelays)); }
                     if (config.btnOffDelays) { btnOffDelays = config.btnOffDelays; localStorage.setItem("btnOffDelays", JSON.stringify(btnOffDelays)); }
+                    
                     // RX Config Import
                     if (config.rxMonitorId) { rxMonitorId = config.rxMonitorId; localStorage.setItem("rxMonitorId", rxMonitorId); }
                     if (config.rxByteIndex) { rxByteIndex = config.rxByteIndex; localStorage.setItem("rxByteIndex", rxByteIndex); }
@@ -884,6 +939,8 @@
                     if (config.rxUnit !== undefined) { rxUnit = config.rxUnit; localStorage.setItem("rxUnit", rxUnit); }
                     if (config.rxLabel !== undefined) { rxLabel = config.rxLabel; localStorage.setItem("rxLabel", rxLabel); }
                     if (config.rxWarnVal !== undefined) { rxWarnVal = config.rxWarnVal; if(rxWarnVal !== null) localStorage.setItem("rxWarnVal", rxWarnVal); }
+                    if (config.rxColor) { rxColor = config.rxColor; localStorage.setItem("rxColor", rxColor); }
+                    if (config.rxAlarmMode) { rxAlarmMode = config.rxAlarmMode; localStorage.setItem("rxAlarmMode", rxAlarmMode); }
                     
                     if (!authCredentialId) { if (btnAuth.some(b => b === true)) { btnAuth = Array(8).fill(false); localStorage.setItem("btnAuth", JSON.stringify(btnAuth)); alert("Safety: Locks disabled (No Credential)"); } }
                     log("Config Loaded"); alert("Configuration Loaded Successfully"); renderConfigList(); renderKeypadGrid();
